@@ -1,0 +1,117 @@
+{
+  "benchmark": {
+    "frames": 36,
+    "render_seconds_median": 1.1844099215231836,
+    "render_seconds_p95": 1.256355423713103,
+    "render_seconds_max": 2.488418565131724,
+    "bytes_median": 860343,
+    "bytes_max": 942682,
+    "process_peak_rss_mib": 1312.8359375
+  },
+  "benchmark_frame_indices": [
+    108,
+    114,
+    123,
+    132,
+    141,
+    150,
+    210,
+    219,
+    228,
+    237,
+    246,
+    255,
+    315,
+    324,
+    333,
+    342,
+    351,
+    360,
+    414,
+    426,
+    438,
+    450,
+    462,
+    474,
+    486,
+    498,
+    510,
+    522,
+    870,
+    900,
+    930,
+    960,
+    990,
+    1020,
+    1050,
+    1080
+  ],
+  "preview": {
+    "frames": 240,
+    "render_seconds_median": 1.1936084972694516,
+    "render_seconds_p95": 1.258458148362115,
+    "render_seconds_max": 2.504578967578709,
+    "bytes_median": 901143,
+    "bytes_max": 928269,
+    "process_peak_rss_mib": 1319.1015625
+  },
+  "devices": [
+    {
+      "device": [
+        "NVIDIA RTX A6000",
+        "CUDA_NVIDIA RTX A6000_0000:16:00_OptiX"
+      ],
+      "backend": "OPTIX",
+      "blender": "5.2.4 LTS",
+      "blender_numpy": "2.3.4",
+      "scene_setup_s": 2.8120746249333024
+    },
+    {
+      "device": [
+        "NVIDIA RTX A6000",
+        "CUDA_NVIDIA RTX A6000_0000:34:00_OptiX"
+      ],
+      "backend": "OPTIX",
+      "blender": "5.2.4 LTS",
+      "blender_numpy": "2.3.4",
+      "scene_setup_s": 2.872519892640412
+    },
+    {
+      "device": [
+        "NVIDIA RTX A6000",
+        "CUDA_NVIDIA RTX A6000_0000:ac:00_OptiX"
+      ],
+      "backend": "OPTIX",
+      "blender": "5.2.4 LTS",
+      "blender_numpy": "2.3.4",
+      "scene_setup_s": 2.8455696431919932
+    },
+    {
+      "device": [
+        "NVIDIA RTX A6000",
+        "CUDA_NVIDIA RTX A6000_0000:ca:00_OptiX"
+      ],
+      "backend": "OPTIX",
+      "blender": "5.2.4 LTS",
+      "blender_numpy": "2.3.4",
+      "scene_setup_s": 2.8155844090506434
+    }
+  ],
+  "temporal_screen": {
+    "mean_abs_rgb_diff_p95_8bit": 16.114622116088867,
+    "max_mean_abs_rgb_diff_8bit": 17.41181182861328,
+    "exact_duplicate_pairs_at_192px": 0,
+    "at_shard_boundaries": {
+      "585": 11.487525939941406,
+      "645": 11.629067420959473,
+      "705": 6.652456283569336
+    }
+  },
+  "comparison_crops": {
+    "near-grass": 315,
+    "tree-shade": 108,
+    "distant-grass": 438,
+    "turn-boundary": 582,
+    "old-strip": 738
+  }
+}

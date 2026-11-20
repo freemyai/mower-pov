@@ -30,3 +30,31 @@ available for later audio shaping.
 The phase figures are state diagnostics. Artistic acceptance of grass visibility after the
 turn requires inspecting the Blender camera view. At 240 Hz, the core models a moving disc
 over piecewise linear center segments and the chassis with a conservative swept envelope.
+
+## Phase 5–6 render and encode
+
+The background Blender worker loads the existing bundle and does not run simulation.
+It uses Blender's bundled Python and NumPy. On the verified Blender 5.2.4 LTS build these
+were Python 3.13.13 and NumPy 2.3.4. Renderer request fingerprints record the source hash,
+resolved Blender build string, bundle ID, frame indices, device selection and rendering options.
+Use a new request directory for each render. A batch writes each image to a temporary path
+before renaming it and records only finished frames in `frames.jsonl`.
+
+Numbered PNGs are AgX display output. The preview encoder converts sRGB to BT.709
+limited-range Y'CbCr with FFmpeg zscale before H.264 encoding and verifies decode and
+metadata. The raw comparison PNGs use the same display transform and disable OIDN.
+Multilayer EXRs retain linear Combined, Denoising Albedo and Denoising Normal channels.
+Absolute seconds use frame index divided by the bundle frame rate. The encoded video starts
+at playback time zero and its sidecar records the original frame range and start time.
+
+For the verified GPU and CPU paths:
+
+```sh
+MOWER_BLENDER=/path/to/blender .venv/bin/python -m pytest -q
+scripts/render_review.sh "$run" /path/to/blender runs/backyard-review OPTIX4
+```
+
+The integration smoke renders on CPU using the installed Blender, including one multilayer
+EXR. The production of the review frames was run locally with OptiX and no external assets.
+Codex (GPT-6) implemented, reviewed and iterated on the scene and examined generated frame
+evidence. The delivery bundle records the actual Blender and device settings.

@@ -1,0 +1,13 @@
+{
+  "source_first_frame": 525,
+  "source_last_frame": 764,
+  "source_start_s": 17.5,
+  "fps": "30/1",
+  "duration_s": 8.0,
+  "read_frames": 240,
+  "width": 960,
+  "height": 540,
+  "codec": "h264",
+  "pixel_format": "yuv420p",
+  "color_transfer": "bt709"
+}

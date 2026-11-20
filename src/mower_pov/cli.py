@@ -19,7 +19,41 @@ def main(argv=None):
     prepare.add_argument("--runs", type=Path, default=Path("runs"))
     prepare.add_argument("--environment", type=Path)
     prepare.add_argument("--diagnostics", type=Path)
+    render = commands.add_parser("render")
+    render.add_argument("run_dir", type=Path)
+    render.add_argument("--blender", type=Path, default=Path("blender"))
+    render.add_argument("--frames", required=True, help="Absolute indices or half-open ranges")
+    render.add_argument("--output", type=Path, required=True)
+    render.add_argument("--preset", choices=["smoke", "preview"], default="preview")
+    render.add_argument("--device", choices=["CPU", "OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"], default="CPU")
+    render.add_argument("--gpu-index", type=int, default=0)
+    render.add_argument("--undenoised", action="store_true")
+    render.add_argument("--exr", action="store_true")
+    encode = commands.add_parser("encode-preview")
+    encode.add_argument("directories", nargs="+", type=Path)
+    encode.add_argument("--frames", required=True, help="A contiguous half-open absolute range")
+    encode.add_argument("--fps", type=int, default=30)
+    encode.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
+    if args.command == "encode-preview":
+        from .rendering.driver import parse_frames
+        from .rendering.preview import encode_preview
+
+        report = encode_preview(args.directories, parse_frames(args.frames), args.fps, args.output)
+        args.output.with_suffix(".json").write_text(json.dumps(report, indent=2) + "\n")
+        print(f"Encoded {report['read_frames']} frames to {args.output}")
+        return 0
+    if args.command == "render":
+        from .rendering.driver import RenderRequest, parse_frames, render_frames
+
+        request = RenderRequest(args.run_dir, parse_frames(args.frames), args.preset,
+                                args.output, args.blender, args.device, args.gpu_index,
+                                not args.undenoised, args.exr)
+        result = render_frames(request)
+        print(f"Rendered {len(result.produced_frames)}/{len(request.frame_indices)} frames in {result.output_dir}")
+        if result.failed_frames:
+            print(f"Failed frames: {result.failed_frames}. See {result.worker_log}")
+        return 1 if result.failed_frames else 0
     if args.command == "prepare":
         from .cache import prepare_run, save_bundle
         from .config import load_config

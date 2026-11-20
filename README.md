@@ -19,3 +19,19 @@ for the verified installation and bundle format.
 
 Source code is GPL-3.0-or-later. See [LICENSE](LICENSE) and
 [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Blender review clip
+
+The review clip uses absolute frames 525–764 of the default 40-second run. Use the pinned
+Blender executable and FFmpeg with libx264 and zscale.
+
+```sh
+run="$(awk '{print $2}' runs/phase-0-4/prepare.txt)"
+scripts/render_review.sh "$run" /path/to/blender runs/backyard-review OPTIX
+```
+
+The command writes the 8-second MP4, seven keyframes, multilayer linear EXRs, raw and OIDN
+comparisons, and render measurements. Set the last argument to `OPTIX4` for four discrete
+OptiX devices or `CPU` for an explicitly selected CPU run. An individual frame can be
+rendered with `python -m mower_pov render --help`. See the [visual review](docs/artistic-review.md)
+and [measured render timings](docs/benchmarks.md).
