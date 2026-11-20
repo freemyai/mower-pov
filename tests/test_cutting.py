@@ -96,3 +96,10 @@ def test_offset_cut_sweep_accounts_for_pitch():
     assert state.root_first_cut_s[0] == pytest.approx(
         .5 - np.arccos((.60 - .14) / .5) / np.deg2rad(120), abs=.001
     )
+
+
+def test_exact_switch_off_contact_is_not_a_cut():
+    cfg, terrain, roots = fixture(xy=((1.14, 0),), h=(.10,))
+    traj = trajectory([(0, 0), (1, 0)], [1., 2.], [True, False])
+    state = compute_cut_state(cfg, terrain, traj, roots)
+    assert np.isposinf(state.root_first_cut_s[0])

@@ -24,6 +24,17 @@ def _first_fraction(xy, start, delta, radius):
                                          entry, np.inf))
 
 
+def _hit_times(xy, start, end, radius, t0, t1, include_end):
+    first = _first_fraction(xy, start, end - start, radius)
+    ids = np.flatnonzero(first <= 1)
+    times = t0 + first[ids] * (t1 - t0)
+    if not include_end:
+        # Test the published time as well as the normalized intersection.
+        valid = times < t1
+        return ids[valid], times[valid]
+    return ids, times
+
+
 def _segments(config, trajectory):
     offset = np.array([*config.mower.blade_xy_m, 0.])
     centers = (trajectory.position_m + trajectory.orientation @ offset)[:, :2]
@@ -66,16 +77,14 @@ def compute_cut_state(config: RunConfig, terrain: Terrain, trajectory: Trajector
         valid = terrain.mowable_mask[row0:row1, col0:col1] if local.size else local.astype(bool)
         rr, cc = np.nonzero(np.isinf(local) & valid)
         cell_xy = grid_to_xy(terrain, np.column_stack((rr + row0, cc + col0)))
-        first = _first_fraction(cell_xy, start, end - start, radius)
-        hit = first <= 1 if include_end else first < 1
-        local[rr[hit], cc[hit]] = t0 + first[hit] * (t1 - t0)
+        hit, times = _hit_times(cell_xy, start, end, radius, t0, t1, include_end)
+        local[rr[hit], cc[hit]] = times
 
         a, b = np.searchsorted(sorted_x, low[0]), np.searchsorted(sorted_x, high[0], side="right")
         ids = sorted_ids[a:b]
         ids = ids[(xy[ids, 1] >= low[1]) & (xy[ids, 1] <= high[1]) & np.isinf(root_times[ids])]
-        first = _first_fraction(xy[ids], start, end - start, radius)
-        hit = first <= 1 if include_end else first < 1
-        root_times[ids[hit]] = t0 + first[hit] * (t1 - t0)
+        hit, times = _hit_times(xy[ids], start, end, radius, t0, t1, include_end)
+        root_times[ids[hit]] = times
 
     # Independent absolute-time wheel contact paths. Keep both passes available for replay.
     track = config.mower.track_m
