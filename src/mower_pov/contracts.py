@@ -132,3 +132,18 @@ class Trajectory:
 class Violation:
     time_s: float
     reason: str
+
+
+@dataclass(frozen=True)
+class CutState:
+    t_first_cut_s: np.ndarray
+    cut_height_m: float
+    root_first_cut_s: np.ndarray
+    root_grid_rc: np.ndarray
+    wheel_contact_time_s: np.ndarray
+    wheel_contact_xy_m: np.ndarray
+    wheel_width_m: float
+
+    @property
+    def wheel_contact_count(self) -> int:
+        return 2 * len(self.wheel_contact_time_s)
