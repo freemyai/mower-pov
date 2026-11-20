@@ -1,6 +1,7 @@
 """Shared data contracts. Time is absolute seconds, coordinates are right-handed."""
 
 from dataclasses import dataclass
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -78,3 +79,28 @@ class RunConfig:
 
 
 EnvironmentReport = dict[str, object]
+
+
+
+
+@dataclass(frozen=True)
+class Terrain:
+    # Cell centers, arrays indexed [row along +Y, column along +X].
+    height_m: np.ndarray
+    origin_xy_m: np.ndarray
+    cell_size_m: float
+    mowable_mask: np.ndarray
+    obstacle_xyxy_m: tuple[float, float, float, float]
+
+
+@dataclass(frozen=True)
+class BladeRoots:
+    root_id: np.ndarray
+    root_xyz_m: np.ndarray
+    h0_m: np.ndarray
+    width_m: np.ndarray
+    bend: np.ndarray
+    phase: np.ndarray
+    azimuth_rad: np.ndarray
+    tint: np.ndarray
+    dry_tip: np.ndarray
