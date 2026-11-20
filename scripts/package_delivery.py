@@ -39,14 +39,15 @@ def package(main, showcase, review, output):
     files = {}
     for folder, names in (
         (main, ("mower-pov-40s.mp4", "backyard-40s.wav", "mower-pov-cover.jpg", "feature-contact.jpg")),
-        (showcase, ("garden-extras-18s.mp4",)),
+        (showcase, ("garden-extras-18s.mp4", "garden-extras-contact.jpg")),
         (review, ("hedgehog-4s-with-sound.mp4", "dog-and-return-8s-with-sound.mp4")),
     ):
         files.update({f"media/{name}": folder / name for name in names})
     for entry in sorted(work.iterdir()):
         if entry.is_file():
             files[f"work-bundle/{entry.name}"] = entry
-    for name in ("mower-pov-40s.json", "feature-qa.json", "pytest.txt", "source-commit.txt"):
+    for name in ("mower-pov-40s.json", "feature-qa.json", "pytest.txt", "source-commit.txt",
+                 "frame-900-render-replay.json"):
         files[f"evidence/{name}"] = main / name
     files["evidence/garden-extras-18s.json"] = showcase / "garden-extras-18s.json"
     for section, directory in (("production", main), ("showcase", showcase)):
