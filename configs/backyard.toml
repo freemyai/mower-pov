@@ -1,0 +1,44 @@
+seed = 20261120
+
+[world]
+width_m = 12.0
+depth_m = 10.0
+duration_s = 40.0
+step_hz = 240
+cell_m = 0.01
+flower_bed_xyxy_m = [4.45, -1.6, 5.6, 1.6]
+
+[mower]
+length_m = 0.50
+width_m = 0.42
+track_m = 0.32
+max_speed_mps = 0.30
+max_accel_mps2 = 0.35
+max_omega_radps = 0.80
+max_alpha_radps2 = 1.20
+blade_radius_m = 0.14
+blade_xy_m = [0.0, 0.0]
+row_spacing_m = 0.25
+
+[camera]
+mount_xyz_m = [0.18, 0.0, 0.22]
+hfov_deg = 100.0
+pitch_deg = 12.0
+
+[grass]
+min_height_m = 0.08
+max_height_m = 0.12
+cut_height_m = 0.045
+roots_per_m2 = 1800
+
+[render]
+width = 1920
+height = 1080
+fps = 30
+pixel_format = "yuv420p"
+engine_version = "5.2.4"
+samples = 128
+
+[audio]
+sample_rate_hz = 48000
+channels = 2

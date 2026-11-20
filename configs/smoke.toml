@@ -1,0 +1,9 @@
+extends = "backyard.toml"
+
+[grass]
+roots_per_m2 = 120
+
+[render]
+width = 640
+height = 360
+samples = 8

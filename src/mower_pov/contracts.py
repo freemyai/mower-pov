@@ -1,0 +1,80 @@
+"""Shared data contracts. Time is absolute seconds, coordinates are right-handed."""
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class WorldConfig:
+    width_m: float
+    depth_m: float
+    duration_s: float
+    step_hz: int
+    cell_m: float
+    flower_bed_xyxy_m: tuple[float, float, float, float]
+
+
+@dataclass(frozen=True)
+class MowerConfig:
+    length_m: float
+    width_m: float
+    track_m: float
+    max_speed_mps: float
+    max_accel_mps2: float
+    max_omega_radps: float
+    max_alpha_radps2: float
+    blade_radius_m: float
+    blade_xy_m: tuple[float, float]
+    row_spacing_m: float
+
+
+@dataclass(frozen=True)
+class CameraConfig:
+    mount_xyz_m: tuple[float, float, float]
+    hfov_deg: float
+    pitch_deg: float
+
+
+@dataclass(frozen=True)
+class GrassConfig:
+    min_height_m: float
+    max_height_m: float
+    cut_height_m: float
+    roots_per_m2: int
+
+
+@dataclass(frozen=True)
+class RenderConfig:
+    width: int
+    height: int
+    fps: int
+    pixel_format: str
+    engine_version: str
+    samples: int
+
+
+@dataclass(frozen=True)
+class AudioConfig:
+    sample_rate_hz: int
+    channels: int
+
+
+@dataclass(frozen=True)
+class RunConfig:
+    seed: int
+    world: WorldConfig
+    mower: MowerConfig
+    camera: CameraConfig
+    grass: GrassConfig
+    render: RenderConfig
+    audio: AudioConfig
+
+    @property
+    def frame_count(self) -> int:
+        return round(self.world.duration_s * self.render.fps)
+
+    @property
+    def audio_frames(self) -> int:
+        return round(self.world.duration_s * self.audio.sample_rate_hz)
+
+
+EnvironmentReport = dict[str, object]
