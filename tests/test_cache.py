@@ -72,3 +72,13 @@ def test_same_size_corruption_rejected(bundle):
             load_bundle(path.parent)
     finally:
         path.write_bytes(original)
+
+
+def test_numeric_config_representations_share_identity(bundle):
+    from dataclasses import replace
+
+    config = bundle.resolved_config
+    equivalent = replace(config, world=replace(config.world, duration_s=4))
+    prepared = prepare_run(equivalent, bundle.run_dir.parent)
+    assert prepared.run_id == bundle.run_id
+    assert save_bundle(prepared) == save_bundle(bundle)

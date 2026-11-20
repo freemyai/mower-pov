@@ -15,7 +15,7 @@ from zipfile import BadZipFile
 
 import numpy as np
 
-from .config import config_from_dict, validate_config
+from .config import config_from_dict
 from .contracts import BladeRoots, CutState, RunBundle, RunConfig, Terrain, Trajectory
 from .cutting import compute_cut_state
 from .events import build_events, events_from_json, events_to_json
@@ -108,7 +108,7 @@ def _record(record_type, arrays, prefix=""):
 
 def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
                 environment: Mapping | None = None) -> RunBundle:
-    validate_config(config)
+    config = config_from_dict(asdict(config))
     terrain = build_terrain(config)
     trajectory = integrate_motion(config, terrain, make_demo_schedule(config, terrain))
     violations = validate_swept_body(config, terrain, trajectory)

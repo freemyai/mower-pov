@@ -28,6 +28,6 @@ def test_blade_roots_stay_on_terrain():
 
 
 def test_world_grid_coordinate_roundtrip():
-    teren = build_terrain(load_config("configs/smoke.toml"))
+    terrain = build_terrain(load_config("configs/smoke.toml"))
     row_col = np.array([[4, 10], [715, 1168]])
-    np.testing.assert_array_equal(xy_to_grid(teren, grid_to_xy(teren, row_col)), row_col)
+    np.testing.assert_array_equal(xy_to_grid(terrain, grid_to_xy(terrain, row_col)), row_col)
