@@ -425,6 +425,7 @@ class SceneReplay:
     chassis: object
     grass: object
     foliage: list[FoliageReplay]
+    yard_life: object | None = None
 
     def apply(self, frame):
         fps = self.bundle.resolved_config.render.fps
@@ -435,6 +436,8 @@ class SceneReplay:
         self.grass.apply(time)
         for plant in self.foliage:
             plant.apply(time)
+        if self.yard_life:
+            self.yard_life.apply(time)
 
 
 def build_scene(run_dir: str, preset: str) -> SceneReplay:
@@ -467,7 +470,12 @@ def build_scene(run_dir: str, preset: str) -> SceneReplay:
     soil = material(bpy, "Patchy loam and basal grass", (.080, .104, .035),
                     surface_noise=(11, .23, .029))
     _ground(bpy, bundle, soil)
+    from .blender_life import make_backyard_life
+
     foliage = _garden(bpy, bundle)
+    yard_life, shelter = make_backyard_life(bpy, bundle)
+    if shelter is not None:
+        foliage.insert(0, shelter)
     chassis = _vehicle(bpy, scene, cfg)
     camera = mount_camera(scene, cfg)
     if preset == "beauty":
@@ -475,6 +483,6 @@ def build_scene(run_dir: str, preset: str) -> SceneReplay:
         camera.data.dof.focus_distance = .85
         camera.data.dof.aperture_fstop = 9.5
     grass = make_grass(scene, bundle)
-    replay = SceneReplay(bundle, scene, camera, chassis, grass, foliage)
+    replay = SceneReplay(bundle, scene, camera, chassis, grass, foliage, yard_life)
     replay.apply(0)
     return replay
