@@ -35,3 +35,6 @@ comparisons, and render measurements. Set the last argument to `OPTIX4` for four
 OptiX devices or `CPU` for an explicitly selected CPU run. An individual frame can be
 rendered with `python -m mower_pov render --help`. See the [visual review](docs/artistic-review.md)
 and [measured render timings](docs/benchmarks.md).
+
+Set `MOWER_REVIEW_PRESET=beauty` for the 720p garden polish covering the same timeline,
+with a fixed lens focus and side-by-side crop comparisons.

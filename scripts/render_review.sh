@@ -11,6 +11,7 @@ blender=$2
 out=$3
 mode=${4:-OPTIX}
 python=${MOWER_PYTHON:-.venv/bin/python}
+preset=${MOWER_REVIEW_PRESET:-preview}
 
 case "$mode" in
   CPU|OPTIX) backend=$mode; cards=(0 0 0 0) ;;
@@ -20,7 +21,7 @@ esac
 mkdir "$out"
 
 render() {
-  "$python" -m mower_pov render "$run" --blender "$blender" --device "$backend" --preset preview "$@"
+  "$python" -m mower_pov render "$run" --blender "$blender" --device "$backend" --preset "$preset" "$@"
 }
 
 if [[ "$mode" == OPTIX4 ]]; then

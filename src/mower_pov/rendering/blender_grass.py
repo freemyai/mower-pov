@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .blender_wind import breeze, leaf_tilt
+
 
 def grass_time_s(blender_frame, fps):
     return blender_frame / fps
@@ -14,7 +16,7 @@ def blade_length(h0, first_cut, absolute_s, target):
 
 
 def wind_angle(absolute_s, phase, position):
-    return .071 * np.sin(4.1 * absolute_s + position) + .025 * np.sin(7.3 * absolute_s + phase)
+    return .018 * np.sin(5.8 * absolute_s + position) + .015 * np.sin(9.3 * absolute_s + phase)
 
 
 @dataclass
@@ -56,9 +58,12 @@ class GrassReplay:
 
         spread = self.widths * (.67 + .33 * h / self.h0)
         scale = np.column_stack((spread, spread, h * 10)).astype("f")
-        angles = np.column_stack((wind_angle(absolute_s, self.phase, spatial_phase) + .65 * press,
-                                  .65 * wind_angle(absolute_s, self.phase + 1.3, .7 * spatial_phase),
-                                  self.yaw)).astype("f")
+        wind = leaf_tilt(breeze(absolute_s, x, y), self.yaw)
+        angles = np.column_stack((
+            wind[:, 0] + wind_angle(absolute_s, self.phase, spatial_phase) + .65 * press,
+            wind[:, 1] + wind_angle(absolute_s, self.phase + 1.3, .7 * spatial_phase),
+            self.yaw,
+        )).astype("f")
         self.mesh.attributes["leaf_scale"].data.foreach_set("vector", scale.ravel())
         self.mesh.attributes["leaf_angles"].data.foreach_set("vector", angles.ravel())
         self.mesh.update()
@@ -70,14 +75,15 @@ def _leaf_material(bpy, name, tip_tint):
     mat.use_nodes = True
     nodes, links = mat.node_tree.nodes, mat.node_tree.links
     bsdf = nodes.get("Principled BSDF")
-    bsdf.inputs["Roughness"].default_value = .67
+    bsdf.inputs["Roughness"].default_value = .53
+    bsdf.inputs["Specular IOR Level"].default_value = .28
     color = nodes.new("ShaderNodeVertexColor")
     color.layer_name = "LeafTint"
     links.new(color.outputs["Color"], bsdf.inputs["Base Color"])
     transmission = nodes.new("ShaderNodeBsdfTranslucent")
     links.new(color.outputs["Color"], transmission.inputs["Color"])
     mix = nodes.new("ShaderNodeMixShader")
-    mix.inputs[0].default_value = .22
+    mix.inputs[0].default_value = .29
     links.new(bsdf.outputs["BSDF"], mix.inputs[1])
     links.new(transmission.outputs["BSDF"], mix.inputs[2])
     links.new(mix.outputs[0], nodes.get("Material Output").inputs["Surface"])
@@ -88,25 +94,31 @@ def _prototype(bpy, scene, variant, seed):
     rng = np.random.default_rng([seed, 41, variant])
     vertices, faces, colors = [], [], []
     palette = [
-        (.119, .194, .035), (.087, .157, .027), (.168, .235, .050),
-        (.066, .127, .031), (.191, .249, .063), (.102, .172, .032),
+        (.144, .224, .043), (.103, .190, .039), (.184, .269, .049),
+        (.080, .153, .031), (.205, .286, .065), (.117, .197, .036),
     ]
     tip = np.array(palette[variant % len(palette)])
-    num_leaves = 5 if variant < 6 else 3
+    num_leaves = 8 if variant < 6 else 4
     for i in range(num_leaves):
         azimuth = i * 2.39996 + rng.uniform(-.35, .35)
         along = np.array([np.cos(azimuth), np.sin(azimuth)])
         across = along[::-1] * [-1, 1]
-        height = rng.uniform(.56, .93) * .10 if i else .10
-        curl = rng.uniform(.024, .057)
-        width = rng.uniform(.0018, .0041)
+        height = rng.uniform(.39, .91) * .10 if i else .10
+        curl = rng.uniform(.017, .056) * (.72 if i == 0 else 1.)
+        if i >= 6:
+            # Short basal blades close gaps below the canopy.
+            height = rng.uniform(.024, .043)
+            curl = rng.uniform(.023, .040)
+        width = rng.uniform(.00135, .00345) * (1.26 if variant in (1, 4, 8) else 1.)
         root = along * rng.uniform(.001, .006)
         start = len(vertices)
-        for j, f in enumerate([0., .24, .52, .77, 1.]):
-            center = root + along * curl * f ** 1.7
+        profile = [0., .18, .35, .54, .71, .87, 1.] if variant < 6 else [0., .27, .54, .79, 1.]
+        skew = rng.uniform(-.28, .28)
+        for j, f in enumerate(profile):
+            center = root + along * curl * f ** 1.9 + across * curl * skew * f ** 2
             half = width * max(.02, (1 - f ** 1.7) * (.68 + .32 * np.sin(np.pi * f)))
-            leaf_tint = tip * (.27 + .85 * f)
-            if variant in (2, 4) and i == 2 and j == 4:
+            leaf_tint = tip * (.46 + .68 * f)
+            if variant in (2, 4) and i == 2 and f >= .87:
                 leaf_tint = np.array([.29, .225, .06])
             for side in (-1, 0, 1):
                 xy = center + side * half * across
@@ -119,6 +131,8 @@ def _prototype(bpy, scene, variant, seed):
     mesh = bpy.data.meshes.new(f"Leaf tuft {variant}")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
+    for polygon in mesh.polygons:
+        polygon.use_smooth = True
     rgba = mesh.color_attributes.new(name="LeafTint", type="FLOAT_COLOR", domain="POINT")
     rgba.data.foreach_set("color", np.asarray(colors, dtype="f").ravel())
     mesh.materials.append(_leaf_material(bpy, f"Grass leaf {variant}", tip))
@@ -175,7 +189,10 @@ def make_grass(scene, bundle):
     near = np.zeros(len(xyz), dtype=bool)
     for xy in route:
         near |= ((xyz[:, :2] - xy) ** 2).sum(axis=1) < 2.8 ** 2
-    variant = np.where(near, roots.root_id % 6, 6 + roots.root_id % 4).astype("i")
+    x, y = xyz[:, :2].T
+    patch = .5 + .25 * np.sin(2.3 * x + 1.7 * y) + .25 * np.cos(1.6 * x - 2.4 * y)
+    mixed = ((roots.tint + .7 * patch) * 6).astype("i") % 6
+    variant = np.where(near, mixed, 6 + mixed % 4).astype("i")
     mesh = bpy.data.meshes.new("Cached grass roots")
     mesh.vertices.add(len(xyz))
     mesh.vertices.foreach_set("co", xyz.ravel())

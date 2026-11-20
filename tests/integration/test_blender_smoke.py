@@ -62,6 +62,18 @@ def test_blender_subframe_state_uses_cached_roots(blender, tmp_path):
         assert abs(cut - state.cut_height_m) < 1e-7
         assert stable_id == mesh.attributes["root_id"].data[i].value
         assert location == tuple(mesh.vertices[i].co)
+        leaves = shot.foliage[-1]
+        # Each leaf base must follow the center of its stem ring when the plant bends.
+        flower_vertices = np.array([tuple(vertex.co) for vertex in leaves.mesh.vertices[:30]])
+        np.testing.assert_allclose(flower_vertices[24], flower_vertices[6:12].mean(axis=0), atol=1e-4)
+        np.testing.assert_allclose(flower_vertices[29], flower_vertices[12:18].mean(axis=0), atol=1e-4)
+        move = int(leaves.flexibility.argmax())
+        assert leaves.flexibility[move] > 0
+        first_position = tuple(leaves.mesh.vertices[move].co)
+        shot.apply(f + 8.0)
+        assert first_position != tuple(leaves.mesh.vertices[move].co)
+        shot.apply(f + .01)
+        assert first_position == tuple(leaves.mesh.vertices[move].co)
         instances = sum(instance.is_instance for instance in
                         bpy.context.evaluated_depsgraph_get().object_instances)
         assert instances == len(shot.bundle.roots.root_id), instances

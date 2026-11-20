@@ -24,7 +24,9 @@ def main(argv=None):
     render.add_argument("--blender", type=Path, default=Path("blender"))
     render.add_argument("--frames", required=True, help="Absolute indices or half-open ranges")
     render.add_argument("--output", type=Path, required=True)
-    render.add_argument("--preset", choices=["smoke", "preview"], default="preview")
+    from .rendering.blender_scene import PRESETS
+
+    render.add_argument("--preset", choices=PRESETS, default="preview")
     render.add_argument("--device", choices=["CPU", "OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"], default="CPU")
     render.add_argument("--gpu-index", type=int, default=0)
     render.add_argument("--undenoised", action="store_true")

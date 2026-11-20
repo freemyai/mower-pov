@@ -19,3 +19,23 @@ width. The seven reference frames also cover the approach under tree shade and d
 The local video, timeline study, crops and original EXRs are generated in
 `runs/phase-5-6/`. A small contact sheet and verified media metadata are included in
 [the evidence directory](evidence/).
+
+## 庭院打磨版
+
+按原样片的绝对帧 525–764 再渲染，用同一作业包比较画面。镜头外参、路线、切割宽度
+与割高沿用原配置。美术选择为暖色侧光和冷色树影，花坛使用白色雏菊、紫色鼠尾草、
+深色覆盖土和错落的石边，围栏后增加有枝干的树冠作为远景。草根沿用原作业数据。
+近景草叶有更细的曲线、低层叶丛与透光边缘。
+
+草坪上相邻草叶在同一个随世界时间传播的风场里摆动，花叶与树叶也使用这套风场。
+花茎底部固定，越靠近花头摆幅越大。顺序播放或跳到同一绝对时间会得到相同的几何状态。
+`beauty` 预设采用 1280×720、每像素最多 48 个采样、固定焦点 0.85 米和 f/9.5。
+这一级的轻微景深主要落在紧贴镜头的机壳和最近草尖。
+
+```sh
+run="$(awk '{print $2}' runs/phase-0-4/prepare.txt)"
+MOWER_REVIEW_PRESET=beauty scripts/render_review.sh "$run" /path/to/blender runs/new-garden-review OPTIX4
+```
+
+单卡改用 `OPTIX`。导出的 MP4 为无声预览。远景叶缘和重复植物仍能看出程序化造型，
+成片级时域闪烁仍待实时播放复核。

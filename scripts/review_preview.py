@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 
 from mower_pov.rendering.preview import frame_sources
 
-# Full-resolution crop coordinates for the 960 × 540 backyard preview.
+# Reference crop coordinates at 960 × 540, scaled to the rendered dimensions.
 DETAILS = (
     ("near-grass", 315, (290, 314, 671, 486)),
     ("tree-shade", 108, (20, 241, 401, 413)),
@@ -75,7 +75,9 @@ def create_evidence(root):
         images = []
         for j, (folder, setting) in enumerate((("raw-png", "Raw"), ("keyframes", "OIDN"))):
             with Image.open(root / folder / f"frame-{frame:06d}.png") as source:
-                cut = source.convert("RGB").crop(bounds)
+                scale = (source.width / 960, source.height / 540)
+                region = tuple(round(value * scale[axis % 2]) for axis, value in enumerate(bounds))
+                cut = source.convert("RGB").crop(region).resize((381, 172), Image.Resampling.LANCZOS)
             _tile(crops, cut, (6 + j * 387, 8 + i * 196), cut.size,
                   f"{setting} | {label} | {frame / 30:.2f} s")
             images.append(cut)
