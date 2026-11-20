@@ -47,7 +47,7 @@ def package(main, showcase, review, output):
         if entry.is_file():
             files[f"work-bundle/{entry.name}"] = entry
     for name in ("mower-pov-40s.json", "feature-qa.json", "pytest.txt", "source-commit.txt",
-                 "frame-900-render-replay.json"):
+                 "frame-900-render-replay.json", "segment-continuity.json"):
         files[f"evidence/{name}"] = main / name
     files["evidence/garden-extras-18s.json"] = showcase / "garden-extras-18s.json"
     for section, directory in (("production", main), ("showcase", showcase)):
