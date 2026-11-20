@@ -81,3 +81,18 @@ def test_curved_sweep_converges():
         state = compute_cut_state(cfg, terreno, trajectory(f(times), times), roots)
         errors.append(measure_sweep_error(terreno, state, f, .14))
     assert errors[1] <= errors[0] <= .02
+
+
+def test_offset_cut_sweep_accounts_for_pitch():
+    from mower_pov.motion import sample_pose
+
+    cfg, terrain, roots = fixture(xy=((.60, 0),), h=(.10,))
+    cfg = replace(cfg, mower=replace(cfg.mower, blade_xy_m=(.5, 0.)))
+    traj = trajectory([(0, 0), (0, 0)], [0., 1.])
+    traj = replace(traj, pitch_rad=np.deg2rad([-60., 60.]))
+    orientation = np.stack([sample_pose(traj, t)[:3, :3] for t in traj.time_s])
+    traj = replace(traj, orientation=orientation)
+    state = compute_cut_state(cfg, terrain, traj, roots)
+    assert state.root_first_cut_s[0] == pytest.approx(
+        .5 - np.arccos((.60 - .14) / .5) / np.deg2rad(120), abs=.001
+    )

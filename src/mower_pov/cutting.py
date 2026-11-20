@@ -29,11 +29,12 @@ def _segments(config, trajectory):
     centers = (trajectory.position_m + trajectory.orientation @ offset)[:, :2]
     t = trajectory.time_s
     blade = trajectory.blade_enabled
+    angles = np.column_stack((trajectory.unwrapped_yaw, trajectory.pitch_rad, trajectory.roll_rad))
+    motion_bound = np.abs(np.diff(angles, axis=0)).sum(axis=1)
+    subdivisions = np.maximum(1, np.ceil(motion_bound * np.sqrt(np.linalg.norm(offset) / .0008)))
     for i in np.flatnonzero(blade[:-1]):
-        # Arc sagitta from a noncentral mount stays below 0.1 mm per subsegment.
-        n = max(1, int(np.ceil(abs(trajectory.unwrapped_yaw[i + 1] -
-                                   trajectory.unwrapped_yaw[i]) *
-                               np.sqrt(np.linalg.norm(offset) / .0008))))
+        # Bound chord error from all rotating axes to 0.1 mm for noncentral mounts.
+        n = int(subdivisions[i])
         if n == 1:
             yield t[i], t[i + 1], centers[i], centers[i + 1], bool(blade[i + 1])
             continue
