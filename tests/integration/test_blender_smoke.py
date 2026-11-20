@@ -74,9 +74,19 @@ def test_blender_subframe_state_uses_cached_roots(blender, tmp_path):
         assert first_position != tuple(leaves.mesh.vertices[move].co)
         shot.apply(f + .01)
         assert first_position == tuple(leaves.mesh.vertices[move].co)
-        instances = sum(instance.is_instance for instance in
-                        bpy.context.evaluated_depsgraph_get().object_instances)
+        instances = sum(
+            instance.is_instance and instance.parent.name == "Grass from the work-state cache"
+            for instance in bpy.context.evaluated_depsgraph_get().object_instances
+        )
         assert instances == len(shot.bundle.roots.root_id), instances
+        assert shot.yard_life is not None
+        animal = shot.yard_life.hedgehog[0]
+        shot.apply(35.7)
+        first_pose = tuple(animal.location)
+        shot.apply(93.4)
+        assert first_pose != tuple(animal.location)
+        shot.apply(35.7)
+        assert first_pose == tuple(animal.location)
         tires = [obj for obj in shot.chassis.children if obj.name.startswith("Drive tire")]
         assert len(tires) == 2
         assert all(obj.location.x == 0 for obj in tires)
@@ -104,3 +114,25 @@ def test_linear_exr_retains_auxiliary_layers(blender, tmp_path):
     assert header.startswith(b"\x76\x2f\x31\x01")
     for name in (b"Combined", b"Denoising Albedo", b"Denoising Normal"):
         assert name in header
+
+
+def test_resume_replaces_one_corrupt_frame_without_touching_its_neighbor(blender, tmp_path):
+    cfg = load_config("configs/smoke.toml", {"world.duration_s": 4., "grass.roots_per_m2": 25})
+    run = save_bundle(prepare_run(cfg, tmp_path / "runs"))
+    req = RenderRequest(run, (25, 26), "smoke", tmp_path / "images", blender)
+    first = render_frames(req)
+    assert first.produced_frames == (25, 26)
+    good = first.output_dir / "frame-000025.png"
+    corrupt = first.output_dir / "frame-000026.png"
+    stamp = good.stat().st_mtime_ns
+    original = corrupt.read_bytes()
+    corrupt.write_bytes(original[:-1] + bytes([original[-1] ^ 1]))
+    result = render_frames(req)
+    assert result.produced_frames == (25, 26)
+    assert good.stat().st_mtime_ns == stamp
+    with Image.open(corrupt) as image:
+        image.load()
+        assert image.size == (640, 360)
+    ledger = (req.output_dir / "frames.jsonl").read_text()
+    assert ledger.count('"frame": 25,') == 1
+    assert ledger.count('"frame": 26,') == 2

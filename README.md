@@ -38,3 +38,9 @@ and [measured render timings](docs/benchmarks.md).
 
 Set `MOWER_REVIEW_PRESET=beauty` for the 720p garden polish covering the same timeline,
 with a fixed lens focus and side-by-side crop comparisons.
+
+## Local feature production
+
+The feature uses the onboard view with the procedural yard animals. A separate four-shot
+garden montage includes the trampoline and child animation. See [production](docs/production.md)
+for the commands, artifact paths, and review status.

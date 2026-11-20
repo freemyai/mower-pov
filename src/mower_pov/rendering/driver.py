@@ -26,6 +26,7 @@ class RenderRequest:
     gpu_index: int = 0
     denoise: bool = True
     exr: bool = False
+    view: str = "onboard"
 
 
 @dataclass(frozen=True)
@@ -94,7 +95,7 @@ def _write_manifest(path, value):
     partial.replace(path)
 
 
-def _render_locked(request, executable, output, settings, manifest):
+def _render_locked(request, executable, output, settings, manifest, lock_fd):
     frames = request.frame_indices
     manifest_path = output / "request.json"
     worker_log = output / "blender.log"
@@ -124,7 +125,8 @@ def _render_locked(request, executable, output, settings, manifest):
             with worker_log.open("a", encoding="utf8") as log:
                 exit_code = subprocess.run([str(executable), "-b", "-t", "5", "--python-exit-code", "1",
                                             "--python", str(worker), "--", args.name],
-                                           stdout=log, stderr=subprocess.STDOUT, check=False).returncode
+                                           stdout=log, stderr=subprocess.STDOUT, check=False,
+                                           pass_fds=(lock_fd,)).returncode
         stats = _stats(stats_path)
     failed = pending_frames(output, frames, stats, suffix, settings["linear"])
     if exit_code and not failed:
@@ -148,6 +150,8 @@ def render_frames(request: RenderRequest) -> RenderResult:
         raise ValueError("frame indices are outside the absolute timeline")
     if len(set(frames)) != len(frames):
         raise ValueError("duplicate frame index")
+    if request.view not in {"onboard", "showcase"}:
+        raise ValueError(f"unknown camera view {request.view}")
     if request.preset not in PRESETS:
         raise ValueError(f"unknown preset {request.preset}")
     executable = Path(shutil.which(str(request.blender)) or request.blender).resolve()
@@ -160,7 +164,7 @@ def render_frames(request: RenderRequest) -> RenderResult:
     settings = {
         "run_dir": str(state.run_dir.resolve()), "output_dir": str(output),
         "preset": request.preset, "frames": list(frames), "device": request.device,
-        "gpu_index": request.gpu_index, "denoise": request.denoise,
+        "gpu_index": request.gpu_index, "denoise": request.denoise, "view": request.view,
         "format": "OPEN_EXR_MULTILAYER" if request.exr else "PNG",
         "linear": request.preset == "final" and request.denoise and not request.exr,
     }
@@ -172,7 +176,7 @@ def render_frames(request: RenderRequest) -> RenderResult:
     manifest = {"fingerprint": compute_run_id(identity), "identity": identity}
     with (output / ".render.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        return _render_locked(request, executable, output, settings, manifest)
+        return _render_locked(request, executable, output, settings, manifest, lock.fileno())
 
 
 def parse_frames(spec: str) -> tuple[int, ...]:

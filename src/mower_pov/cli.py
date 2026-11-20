@@ -31,6 +31,7 @@ def main(argv=None):
     render.add_argument("--gpu-index", type=int, default=0)
     render.add_argument("--undenoised", action="store_true")
     render.add_argument("--exr", action="store_true")
+    render.add_argument("--view", choices=("onboard", "showcase"), default="onboard")
     encode = commands.add_parser("encode-preview")
     encode.add_argument("directories", nargs="+", type=Path)
     encode.add_argument("--frames", required=True, help="A contiguous half-open absolute range")
@@ -39,7 +40,16 @@ def main(argv=None):
     audio = commands.add_parser("audio")
     audio.add_argument("run_dir", type=Path)
     audio.add_argument("--output", required=True, type=Path)
+    assemble = commands.add_parser("assemble")
+    assemble.add_argument("production_dir", type=Path)
+    assemble.add_argument("--audio", type=Path)
     args = parser.parse_args(argv)
+    if args.command == "assemble":
+        from .rendering.preview import assemble_video
+
+        output = assemble_video(args.production_dir, args.audio)
+        print(f"Assembled {output}")
+        return 0
     if args.command == "audio":
         from .audio import synthesize_audio
         from .cache import load_bundle
@@ -60,7 +70,7 @@ def main(argv=None):
 
         request = RenderRequest(args.run_dir, parse_frames(args.frames), args.preset,
                                 args.output, args.blender, args.device, args.gpu_index,
-                                not args.undenoised, args.exr)
+                                not args.undenoised, args.exr, args.view)
         result = render_frames(request)
         print(f"Rendered {len(result.produced_frames)}/{len(request.frame_indices)} frames in {result.output_dir}")
         if result.failed_frames:

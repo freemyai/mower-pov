@@ -65,6 +65,11 @@ def main():
     started = time.perf_counter()
     replay = build_scene(settings["run_dir"], settings["preset"])
     scene = replay.scene
+    showcase = None
+    if settings["view"] == "showcase":
+        from mower_pov.rendering.blender_showcase import make_showcase
+
+        showcase = make_showcase(bpy, replay)
     device = configure_device(scene, settings["device"], settings["gpu_index"])
     scene.cycles.use_denoising = settings["denoise"]
     scene.cycles.seed = replay.bundle.resolved_config.seed % 2147483647
@@ -94,6 +99,8 @@ def main():
         for frame in settings["frames"]:
             start = time.perf_counter()
             replay.apply(frame)
+            if showcase is not None:
+                showcase.apply(frame / scene.render.fps)
             updated = time.perf_counter()
             dst = output / f"frame-{frame:06d}{suffix}"
             tmp = dst.with_name(f".{dst.stem}.pending{suffix}")

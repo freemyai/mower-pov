@@ -96,3 +96,78 @@ def encode_preview(directories, frame_indices, fps, output: Path):
         "width": data["width"], "height": data["height"], "codec": data["codec_name"],
         "pixel_format": data["pix_fmt"], "color_transfer": data["color_transfer"],
     }
+
+
+def mux_audio(video: Path, wav: Path, first_frame: int, end_frame: int, fps: int,
+              output: Path) -> dict:
+    """Map a full-work-timeline WAV onto a contiguous segment of rendered video."""
+    import wave
+
+    with wave.open(str(wav), "rb") as sound:
+        rate, channels, length = sound.getframerate(), sound.getnchannels(), sound.getnframes()
+    first = round(first_frame * rate / fps)
+    end = round(end_frame * rate / fps)
+    if not 0 <= first < end <= length or (rate, channels) != (48_000, 2):
+        raise ValueError("expected a 48 kHz stereo WAV covering the requested absolute time range")
+    video_info = _probe(video)
+    if (int(video_info["nb_read_frames"]) != end_frame - first_frame
+            or Fraction(video_info["avg_frame_rate"]) != fps
+            or abs(float(video_info["duration"]) - (end_frame - first_frame) / fps) > 1 / fps):
+        raise ValueError("video length or fps differs from the requested absolute audio window")
+    output = Path(output).resolve()
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".mux-", dir=output.parent) as folder:
+        mp4 = Path(folder) / "sound.mp4"
+        subprocess.run([
+            "ffmpeg", "-nostdin", "-v", "error", "-xerror", "-i", str(video), "-i", str(wav),
+            "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "256k",
+            "-af", f"atrim=start_sample={first}:end_sample={end},asetpts=PTS-STARTPTS",
+            "-movflags", "+faststart", str(mp4),
+        ], check=True)
+        response = subprocess.check_output([
+            "ffprobe", "-v", "error", "-select_streams", "a:0", "-show_streams", "-of", "json", str(mp4),
+        ], text=True)
+        sound = json.loads(response)["streams"][0]
+        duration = float(sound["duration"])
+        if (int(sound["sample_rate"]) != rate or sound["channels"] != 2
+                or abs(duration - (end - first) / rate) > 1 / fps
+                or abs(float(sound["start_time"])) > 1 / fps):
+            raise ValueError("muxed stereo audio failed timing verification")
+        os.replace(mp4, output)
+    return {"audio_sample_rate": rate, "audio_channels": channels, "audio_start_sample": first,
+            "audio_end_sample": end, "audio_duration_s": duration}
+
+
+def assemble_video(run_dir: Path, audio_path: Path | None) -> Path:
+    """Assemble a complete production batch for the configured work bundle."""
+    from ..cache import compute_run_id, load_bundle
+    from ..quality import verify_sequence
+
+    root = Path(run_dir)
+    bundles = sorted(root.glob("batch-*"))
+    if not bundles:
+        raise ValueError("no completed production batches")
+    work_path = Path((root / "work-bundle.txt").read_text().strip())
+    work = load_bundle(work_path)
+    for shard in bundles:
+        manifest = json.loads((shard / "request.json").read_text())
+        identity = manifest["identity"]
+        if (manifest["fingerprint"] != compute_run_id(identity)
+                or identity.get("run_id") != work.run_id
+                or identity.get("preset") != "final"
+                or identity.get("view", "onboard") != "onboard"
+                or identity.get("linear") is not True):
+            raise ValueError(f"invalid production fingerprint or mismatched work bundle: {shard}")
+    config = work.resolved_config
+    frames = tuple(range(config.frame_count))
+    verify_sequence(bundles, frames, (config.render.width, config.render.height))
+    output = root / "mower-pov-40s.mp4"
+    with tempfile.TemporaryDirectory(prefix=".film-", dir=root) as folder:
+        silent = Path(folder) / "silent.mp4"
+        report = encode_preview(bundles, frames, config.render.fps, silent)
+        if audio_path is None:
+            os.replace(silent, output)
+        else:
+            report.update(mux_audio(silent, audio_path, 0, config.frame_count, config.render.fps, output))
+    output.with_suffix(".json").write_text(json.dumps(report, indent=2) + "\n")
+    return output
