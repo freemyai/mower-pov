@@ -14,7 +14,25 @@ def main(argv=None):
     doctor.add_argument("--blender", type=Path)
     doctor.add_argument("--device", default="CPU", choices=["CPU", "OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"])
     doctor.add_argument("--output", type=Path, default=Path("environment.json"))
+    prepare = commands.add_parser("prepare")
+    prepare.add_argument("--config", type=Path, default=Path("configs/backyard.toml"))
+    prepare.add_argument("--runs", type=Path, default=Path("runs"))
+    prepare.add_argument("--environment", type=Path)
+    prepare.add_argument("--diagnostics", type=Path)
     args = parser.parse_args(argv)
+    if args.command == "prepare":
+        from .cache import prepare_run, save_bundle
+        from .config import load_config
+
+        environment = json.loads(args.environment.read_text()) if args.environment else None
+        bundle = prepare_run(load_config(args.config), args.runs, environment)
+        path = save_bundle(bundle)
+        if args.diagnostics:
+            from .diagnostics import write_diagnostics
+
+            write_diagnostics(bundle, args.diagnostics)
+        print(f"Bundle: {path}")
+        return 0
     args.output.parent.mkdir(parents=True, exist_ok=True)
     report = probe_environment(args.blender, args.device, args.output.parent)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")

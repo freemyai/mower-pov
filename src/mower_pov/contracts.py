@@ -1,6 +1,8 @@
 """Shared data contracts. Time is absolute seconds, coordinates are right-handed."""
 
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Mapping
 import numpy as np
 
 
@@ -147,3 +149,32 @@ class CutState:
     @property
     def wheel_contact_count(self) -> int:
         return 2 * len(self.wheel_contact_time_s)
+
+
+@dataclass(frozen=True)
+class Event:
+    time_s: float
+    kind: str
+    position_m: tuple[float, float, float]
+    intensity: float
+    payload: tuple[tuple[str, int | float], ...] = ()
+
+
+@dataclass(frozen=True)
+class EventLog:
+    events: tuple[Event, ...]
+
+
+
+
+@dataclass(frozen=True)
+class RunBundle:
+    run_id: str
+    run_dir: Path
+    resolved_config: RunConfig
+    terrain: Terrain
+    trajectory: Trajectory
+    roots: BladeRoots
+    cut_state: CutState
+    events: EventLog
+    manifest: Mapping[str, object]
