@@ -414,7 +414,10 @@ def _light(bpy, scene):
     scene.collection.objects.link(sun)
 
 
-PRESETS = {"smoke": (640, 360, 8), "preview": (960, 540, 32), "beauty": (1280, 720, 48)}
+PRESETS = {
+    "smoke": (640, 360, 8), "preview": (960, 540, 32), "beauty": (1280, 720, 48),
+    "final": (1920, 1080, 128),
+}
 
 
 @dataclass
@@ -449,6 +452,9 @@ def build_scene(run_dir: str, preset: str) -> SceneReplay:
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.render.resolution_x, scene.render.resolution_y, scene.cycles.samples = PRESETS[preset]
+    if preset == "final":
+        scene.render.resolution_x, scene.render.resolution_y = cfg.render.width, cfg.render.height
+        scene.cycles.samples = cfg.render.samples
     scene.render.resolution_percentage = 100
     scene.render.fps = cfg.render.fps
     scene.frame_start = 0
@@ -478,7 +484,7 @@ def build_scene(run_dir: str, preset: str) -> SceneReplay:
         foliage.insert(0, shelter)
     chassis = _vehicle(bpy, scene, cfg)
     camera = mount_camera(scene, cfg)
-    if preset == "beauty":
+    if preset in {"beauty", "final"}:
         camera.data.dof.use_dof = True
         camera.data.dof.focus_distance = .85
         camera.data.dof.aperture_fstop = 9.5

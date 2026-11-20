@@ -36,7 +36,17 @@ def main(argv=None):
     encode.add_argument("--frames", required=True, help="A contiguous half-open absolute range")
     encode.add_argument("--fps", type=int, default=30)
     encode.add_argument("--output", required=True, type=Path)
+    audio = commands.add_parser("audio")
+    audio.add_argument("run_dir", type=Path)
+    audio.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
+    if args.command == "audio":
+        from .audio import synthesize_audio
+        from .cache import load_bundle
+
+        output = synthesize_audio(load_bundle(args.run_dir), args.output)
+        print(f"Rendered audio to {output}")
+        return 0
     if args.command == "encode-preview":
         from .rendering.driver import parse_frames
         from .rendering.preview import encode_preview
