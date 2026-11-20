@@ -26,6 +26,14 @@ def build_events(config: RunConfig, trajectory: Trajectory, state: CutState,
         for i in np.flatnonzero(np.diff(signal, prepend=False)):
             emit(t[i], on if signal[i] else off, float(signal[i]))
 
+    # Estimate vertical acceleration from completed trajectory intervals.
+    dt = np.diff(t)
+    vertical_speed = np.diff(pos[:, 2]) / dt
+    vertical_accel = np.abs(np.diff(vertical_speed) / ((dt[:-1] + dt[1:]) / 2))
+    above = vertical_accel > 1.
+    for i in np.flatnonzero(above & np.diff(above, prepend=False)):
+        emit(t[i + 2], "terrain_impact", vertical_accel[i], acceleration_mps2=float(vertical_accel[i]))
+
     removal = np.maximum(roots.h0_m - state.cut_height_m, 0)
     affected = np.isfinite(state.root_first_cut_s) & (removal > 0)
     if affected.any():

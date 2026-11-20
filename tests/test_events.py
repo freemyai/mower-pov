@@ -30,3 +30,19 @@ def test_load_summary_never_includes_roots_cut_after_event():
     state = compute_cut_state(cfg, terrain, traj, roots)
     load, = [ev for ev in build_events(cfg, traj, state, roots).events if ev.kind == "cut_load"]
     assert load.time_s >= max(state.root_first_cut_s)
+
+
+def test_terrain_impact_uses_shared_trajectory():
+    from dataclasses import replace
+
+    cfg, terrain, roots = fixture()
+    traj = trajectory([[0, 0], [.1, 0], [.2, 0], [.3, 0], [.4, 0]], np.arange(5) * .1)
+    position = traj.position_m.copy()
+    position[2, 2] = .06
+    traj = replace(traj, position_m=position)
+    state = compute_cut_state(cfg, terrain, traj, roots)
+    log = build_events(cfg, traj, state, roots)
+    impact = [event for event in log.events if event.kind == "terrain_impact"]
+    assert impact
+    assert all(0 < event.time_s < traj.time_s[-1] for event in impact)
+    assert impact[0].intensity > 0

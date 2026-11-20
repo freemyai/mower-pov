@@ -106,7 +106,7 @@ def _plots(bundle, output_dir):
                    (y >= roi["ylim"][0]) & (y <= roi["ylim"][1]))
         heights = sample_grass_heights(roots, state, time)
         image = ax.scatter(x[visible], y[visible], c=heights[visible] * 100, s=3,
-                           linewidths=0, cmap="cividis", vmin=cfg.grass.cut_height_m * 100,
+                           linewidths=0, cmap="cividis", vmin=min(cfg.grass.min_height_m, cfg.grass.cut_height_m) * 100,
                            vmax=cfg.grass.max_height_m * 100)
         _label(ax)
         ax.set(**roi, title=f"Root lengths at t = {time:g} s")
