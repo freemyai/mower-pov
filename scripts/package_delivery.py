@@ -17,7 +17,7 @@ README = """# Mower POV · 午后庭院
 - 质量报告区分机器检查、画面抽查和试听状态。
 
 work-bundle 包含实际作业缓存，按绝对世界时间重放。code 中有当前项目和主片渲染时
-固定的源码版本。运行命令、锁定依赖和依赖许可见各源码包内的 README 和 docs。
+固定的源码版本。若花絮单独固定源码，则另附其 Python 快照。运行命令、锁定依赖和依赖许可见各源码包内的 README 和 docs。
 SHA256SUMS 列出交付文件的校验值。线性 EXR 和 PNG 帧序列留在本地制作目录。
 """
 
@@ -66,6 +66,13 @@ def package(main, showcase, review, output):
             subprocess.run(["git", "-C", str(root), "archive", "--format=zip",
                             f"--prefix=mower-pov-{name}/", "-o", str(snapshot), revision], check=True)
             files[f"code/mower-pov-{name}.zip"] = snapshot
+        montage_source = showcase.parent / "source" / "src"
+        if montage_source.is_dir():
+            snapshot = staging / "showcase.zip"
+            with ZipFile(snapshot, "w", compression=ZIP_DEFLATED) as archive:
+                for path in sorted(montage_source.rglob("*.py")):
+                    archive.write(path, f"mower-pov-showcase/src/{path.relative_to(montage_source)}")
+            files["code/mower-pov-showcase.zip"] = snapshot
         partial = staging / "delivery.zip"
         sums = "\n".join(f"{_digest(path)}  {name}" for name, path in sorted(files.items())) + "\n"
         with ZipFile(partial, "w", compression=ZIP_DEFLATED, compresslevel=5) as archive:
