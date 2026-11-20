@@ -104,3 +104,31 @@ class BladeRoots:
     azimuth_rad: np.ndarray
     tint: np.ndarray
     dry_tip: np.ndarray
+
+
+@dataclass(frozen=True)
+class ControlSchedule:
+    time_s: np.ndarray
+    v_mps: np.ndarray
+    omega_radps: np.ndarray
+    blade_enabled: np.ndarray
+
+
+@dataclass(frozen=True)
+class Trajectory:
+    time_s: np.ndarray
+    position_m: np.ndarray
+    orientation: np.ndarray
+    unwrapped_yaw: np.ndarray
+    pitch_rad: np.ndarray
+    roll_rad: np.ndarray
+    v_mps: np.ndarray
+    omega_radps: np.ndarray
+    wheel_speeds: np.ndarray
+    blade_enabled: np.ndarray
+
+
+@dataclass(frozen=True)
+class Violation:
+    time_s: float
+    reason: str
