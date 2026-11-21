@@ -217,6 +217,30 @@ def audit_audio_alignment(output, report):
     }
 
 
+def player_clock_stats(log, duration, elapsed):
+    status = re.findall(r"^ *([+-]?\d+\.\d+) A-V:\s*([+-]?\d+\.\d+) fd=\s*(\d+)",
+                        log.replace("\r", "\n"), re.MULTILINE)
+    samples = [(float(clock), float(skew), int(drops)) for clock, skew, drops in status]
+    steady = [abs(skew) for clock, skew, _ in samples if clock >= .25]
+    if not steady or samples[-1][0] < duration - .25:
+        raise ValueError("ffplay did not reach the end of the media clock")
+    # The SDL dummy audio clock can gain time over a long run. Still reject
+    # playback far from real time, and apply the A/V and dropped-frame checks.
+    early = max(.35, .015 * duration)
+    late = max(1., .015 * duration)
+    if not duration - early <= elapsed <= duration + late:
+        raise ValueError(f"ffplay wall clock {elapsed:.3f}s differs from {duration:.3f}s of media")
+    if max(steady) > .125:
+        raise ValueError("ffplay audio and video clocks differ by more than 125 ms")
+    if any(drops for _, _, drops in samples):
+        raise ValueError("ffplay reported dropped frames")
+    return {"expected_duration_s": duration, "wall_duration_s": elapsed,
+            "final_player_clock_s": samples[-1][0], "sampled_status_lines": len(samples),
+            "final_av_skew_s": samples[-1][1],
+            "median_abs_av_skew_s_after_250ms": statistics.median(steady),
+            "max_abs_av_skew_s_after_250ms": max(steady), "dropped_frames": 0}
+
+
 def audit_player(output, report):
     width, height, duration = report["width"], report["height"], report["duration_s"]
     command = [
@@ -230,19 +254,13 @@ def audit_player(output, report):
         subprocess.run(command, env=environment, timeout=2 * duration + 15, check=True,
                        stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
     elapsed = time.monotonic() - started
-    status = re.findall(r"^ *([+-]?\d+\.\d+) A-V:\s*([+-]?\d+\.\d+) fd=\s*(\d+)",
-                        log_path.read_text(encoding="utf8"), re.MULTILINE)
-    samples = [(float(clock), float(skew), int(drops)) for clock, skew, drops in status]
-    steady = [abs(skew) for clock, skew, _ in samples if clock >= .25]
-    if (not steady or samples[-1][0] < duration - .25 or elapsed < duration - .35
-            or max(steady) > .125 or any(drops for _, _, drops in samples)):
-        raise ValueError(f"ffplay did not verify full-rate synchronized playback; see {log_path}")
+    try:
+        stats = player_clock_stats(log_path.read_text(encoding="utf8"), duration, elapsed)
+    except ValueError as error:
+        raise ValueError(f"{error}; see {log_path}") from error
     return {
         "video": report["filename"], "video_sha256": report["sha256"], "exit_code": 0,
-        "expected_duration_s": duration, "wall_duration_s": elapsed, "final_player_clock_s": samples[-1][0],
-        "sampled_status_lines": len(samples), "final_av_skew_s": samples[-1][1],
-        "median_abs_av_skew_s_after_250ms": statistics.median(steady), "max_abs_av_skew_s_after_250ms": max(steady),
-        "dropped_frames": 0, "audio_output": "SDL dummy device", "video_output": "SDL software display via Xvfb",
+        **stats, "audio_output": "SDL dummy device", "video_output": "SDL software display via Xvfb",
         "display_playback_pass": True, "command": command,
     }
 

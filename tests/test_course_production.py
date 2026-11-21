@@ -35,3 +35,14 @@ def test_course_media_uses_bundle_fps_and_absolute_audio_samples(tmp_path):
     alignment = production.audit_audio_alignment(tmp_path, report)
     assert alignment["best_source_lag_samples"] == 0
     assert alignment["normalized_pcm_correlation"] >= 0.98
+
+
+def test_player_bounds_duration_dependent_dummy_clock_drift():
+    log = "  0.26 A-V: 0.032 fd= 0\r  53.00 A-V: 0.021 fd= 0\r  103.96 A-V: -0.025 fd= 0\r"
+    check = production.player_clock_stats(log, duration=104.0, elapsed=103.01)
+    assert check["final_player_clock_s"] == 103.96
+    assert check["dropped_frames"] == 0
+    with pytest.raises(ValueError, match="wall clock"):
+        production.player_clock_stats(log, duration=104.0, elapsed=96.0)
+    with pytest.raises(ValueError, match="dropped frames"):
+        production.player_clock_stats(log.replace("fd= 0", "fd= 1"), duration=104.0, elapsed=104.0)
