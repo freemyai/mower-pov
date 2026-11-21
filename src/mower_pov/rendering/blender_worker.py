@@ -14,6 +14,7 @@ import bpy
 # Blender's Python uses its bundled libraries, with only our own source added.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from mower_pov.rendering.blender_scene import build_scene
+from mower_pov.rendering.shutter import BlenderShutter, Exposure
 
 
 def configure_device(scene, backend, gpu_index):
@@ -76,21 +77,34 @@ def main():
     scene.cycles.seed = replay.bundle.resolved_config.seed % 2147483647
     scene.cycles.use_animated_seed = False
     scene.render.use_persistent_data = settings["device"] != "CPU"
-    if settings["format"] == "OPEN_EXR_MULTILAYER":
-        scene.render.image_settings.media_type = "MULTI_LAYER_IMAGE"
-    scene.render.image_settings.file_format = settings["format"]
-    scene.render.image_settings.color_mode = "RGB" if settings["format"] == "PNG" else "RGBA"
-    if settings["format"] != "PNG":
-        scene.render.image_settings.color_depth = "16"
-        scene.render.image_settings.exr_codec = "ZIP"
+    config = replay.bundle.resolved_config
+    png = settings["format"] == "PNG"
+    exposure = Exposure(settings["shutter_ms"], settings["shutter_samples"]) if settings["shutter_ms"] else None
+    if not exposure:
+        if not png:
+            scene.render.image_settings.media_type = "MULTI_LAYER_IMAGE"
+        scene.render.image_settings.file_format = settings["format"]
+        scene.render.image_settings.color_mode = "RGB" if png else "RGBA"
+        if not png:
+            scene.render.image_settings.color_depth = "16"
+            scene.render.image_settings.exr_codec = "ZIP"
+    def apply_frame(frame):
+        replay.apply(frame)
+        if showcase is not None:
+            showcase.apply(frame / scene.render.fps)
+        if settings["deep_focus"]:
+            replay.camera.data.dof.use_dof = False
+
     output = Path(settings["output_dir"])
-    suffix = ".png" if settings["format"] == "PNG" else ".exr"
+    suffix = ".png" if png else ".exr"
     with (output / "frames.jsonl").open("a", encoding="utf8") as log, TemporaryDirectory(
         prefix=".linear-", dir=output,
     ) as aux:
         aux = Path(aux)
-        if settings["linear"]:
+        shutter = BlenderShutter(scene, aux, png=png, linear=settings["linear"]) if exposure else None
+        if settings["linear"] and not shutter:
             _linear_output(scene, aux)
+
         def record(data):
             print(json.dumps(data, allow_nan=False), file=log, flush=True)
 
@@ -99,14 +113,27 @@ def main():
                 "scene_setup_s": time.perf_counter() - started})
         for frame in settings["frames"]:
             start = time.perf_counter()
-            replay.apply(frame)
-            if showcase is not None:
-                showcase.apply(frame / scene.render.fps)
-            updated = time.perf_counter()
             dst = output / f"frame-{frame:06d}{suffix}"
             tmp = dst.with_name(f".{dst.stem}.pending{suffix}")
-            scene.render.filepath = str(tmp)
-            bpy.ops.render.render(write_still=True)
+            sidecar = dst.with_suffix(".exr")
+            shutter_data = {}
+            if shutter:
+                positions = exposure.sample_frames(frame, scene.render.fps, config.world.duration_s)
+                sidecar_tmp = aux / "integrated.exr"
+                state_time, render_times, compose_time = shutter.render(
+                    frame, positions, apply_frame, tmp, sidecar_tmp
+                )
+                shutter_data = {
+                    "shutter_frames": positions,
+                    "shutter_times_s": [position / scene.render.fps for position in positions],
+                    "subrenders_s": render_times,
+                    "integration_s": compose_time,
+                }
+            else:
+                apply_frame(frame)
+                state_time = time.perf_counter() - start
+                scene.render.filepath = str(tmp)
+                bpy.ops.render.render(write_still=True)
             if not tmp.is_file() or tmp.stat().st_size < 100:
                 raise RuntimeError(f"Blender did not write frame {frame}")
             files = [dst]
@@ -114,15 +141,15 @@ def main():
                 linear = list(aux.glob("*.exr"))
                 if len(linear) != 1:
                     raise RuntimeError(f"missing or ambiguous linear output for frame {frame}: {linear}")
-                sidecar = dst.with_suffix(".exr")
                 os.replace(linear[0], sidecar)
                 files.append(sidecar)
             os.replace(tmp, dst)
             record({"frame": frame, "absolute_s": frame / scene.render.fps,
-                    "state_update_s": updated - start,
-                    "render_and_write_s": time.perf_counter() - updated,
+                    "state_update_s": state_time,
+                    "render_and_write_s": time.perf_counter() - start - state_time,
                     "process_peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
                     "bytes": dst.stat().st_size,
+                    **shutter_data,
                     "files": {path.name: file_sha256(path) for path in files}})
 
 

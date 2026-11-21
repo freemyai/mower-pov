@@ -44,3 +44,10 @@ with a fixed lens focus and side-by-side crop comparisons.
 The feature uses the onboard view with the procedural yard animals. A separate four-shot
 garden montage includes the trampoline and child animation. See [production](docs/production.md)
 for the commands, artifact paths, and review status.
+
+## Dynamic backyard
+
+`configs/backyard-dynamic.toml` records a 40-second fixed-camera scenario with a crossing dog,
+a waiting hedgehog, a separately modeled blade rotor, and a return over the cut swath.
+It uses scene truth for obstacle occupancy. See the [production guide](docs/dynamic-production.md)
+and [dog asset and contact measurements](docs/dog-rig.zh-CN.md).

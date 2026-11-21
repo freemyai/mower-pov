@@ -45,8 +45,9 @@ def _typed(value, kind, name):
 
 
 def config_from_dict(raw):
-    if set(raw) != {"seed", *SECTIONS}:
-        raise ValueError(f"configuration fields differ: {set(raw) ^ {'seed', *SECTIONS}}")
+    keys = set(raw) - {"scenario"}
+    if keys != {"seed", *SECTIONS}:
+        raise ValueError(f"configuration fields differ: {keys ^ {'seed', *SECTIONS}}")
     sections = {}
     for name, kind in SECTIONS.items():
         expected = {field.name: field.type for field in fields(kind)}
@@ -57,7 +58,8 @@ def config_from_dict(raw):
             key: _typed(values[key], field_type, f"{name}.{key}")
             for key, field_type in expected.items()
         })
-    config = RunConfig(_typed(raw["seed"], int, "seed"), **sections)
+    scenario = _typed(raw.get("scenario", "legacy"), str, "scenario")
+    config = RunConfig(_typed(raw["seed"], int, "seed"), **sections, scenario=scenario)
     validate_config(config)
     return config
 
@@ -65,7 +67,7 @@ def config_from_dict(raw):
 def load_config(path: Path, overrides: Mapping[str, object] | None = None) -> RunConfig:
     raw = _read(path, set())
     for key, value in (overrides or {}).items():
-        if key == "seed":
+        if key in {"seed", "scenario"}:
             raw[key] = value
             continue
         section, _, field = key.partition(".")
@@ -89,6 +91,7 @@ def validate_config(config: RunConfig) -> None:
     x0, y0, x1, y1 = w.flower_bed_xyxy_m
     conditions = {
         "seed": type(config.seed) is int and config.seed >= 0,
+        "scenario": config.scenario in {"legacy", "backyard-story", "hedgehog-stays", "toy-detour"},
         "world.flower_bed_xyxy_m": x0 < x1 and y0 < y1,
         "world.cell_m": w.cell_m <= min(w.width_m, w.depth_m),
         "world.duration_s": all(math.isclose(w.duration_s * rate, round(w.duration_s * rate),

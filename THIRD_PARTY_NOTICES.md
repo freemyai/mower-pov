@@ -14,3 +14,6 @@ The optional house scene uses six CC0-1.0 texture files from Poly Haven.
 
 The [asset lock](assets/catalog.lock.json) records the source URLs, license, map types,
 physical repeats, and SHA-256 checksums. [Poly Haven license](https://polyhaven.com/license)
+
+The dynamic short-haired dog is generated from original source included under the project
+license. Its provenance and rig measurements are recorded in the [asset notes](docs/dog-rig.zh-CN.md).

@@ -87,9 +87,12 @@ def mix_audio(bundle: RunBundle) -> AudioMix:
     ])
     i = np.searchsorted(trajectory.time_s, time, side="right") - 1
     blade_on = trajectory.blade_enabled[i]
-    # Ease the rotor speed from the start event while muting every off sample.
-    rotor = np.minimum(1., np.maximum(0., _average(blade_on.astype("f"), round(.65 * rate))))
-    rotor_gate = rotor * blade_on
+    if bundle.story is None:
+        rotor = np.clip(_average(blade_on.astype("f"), round(.65 * rate)), 0., 1.)
+        rotor_gate = rotor * blade_on
+    else:
+        rotor = np.interp(time, trajectory.time_s, bundle.story.rotor_fraction)
+        rotor_gate = rotor
     rotor_phase = _phase(rate, 29 + 34 * rotor - 2.1 * cut)
     motor = np.empty((count, 2), dtype=np.float32)
     blade = np.empty_like(motor)

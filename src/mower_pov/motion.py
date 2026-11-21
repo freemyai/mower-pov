@@ -68,7 +68,11 @@ def integrate_motion(config: RunConfig, terrain: Terrain, controls: ControlSched
     distance = (v[:-1] + v[1:]) * (.5 * dt) * np.sinc(angle_step / (2 * np.pi))
     delta = distance[:, None] * np.column_stack((np.cos(halfway), np.sin(halfway)))
     xy = np.vstack((np.zeros(2), np.cumsum(delta, axis=0)))
+    return trajectory_from_path(config, terrain, t, xy, yaw, v, omega, blade)
 
+def trajectory_from_path(config, terrain, t, xy, yaw, v, omega, blade, rotor=None):
+    m = config.mower
+    dt = 1 / config.world.step_hz
     forward = np.column_stack((np.cos(yaw), np.sin(yaw)))
     left = forward[:, ::-1] * [-1, 1]
     # Four contact points approximate the support plane under the chassis.
@@ -86,9 +90,10 @@ def integrate_motion(config: RunConfig, terrain: Terrain, controls: ControlSched
     gain = -np.expm1(-dt / .09)
     for i in range(1, len(t)):
         support[i] = support[i - 1] + gain * (target[i] - support[i - 1])
-    vibration = blade * np.sin(2 * np.pi * 16 * t)
+    vibration_level = blade if rotor is None else rotor
+    vibration = vibration_level * np.sin(2 * np.pi * 16 * t)
     pitch = support[:, 1] + .0006 * vibration
-    roll = support[:, 2] + .0004 * blade * np.sin(2 * np.pi * 19 * t)
+    roll = support[:, 2] + .0004 * vibration_level * np.sin(2 * np.pi * 19 * t)
     return Trajectory(t, np.column_stack((xy, support[:, 0])), _rotation(yaw, pitch, roll),
                       yaw, pitch, roll, v, omega, wheel_speeds(v, omega, m.track_m), blade)
 

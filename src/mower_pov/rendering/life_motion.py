@@ -3,19 +3,18 @@
 import numpy as np
 
 from ..actors.behavior import ball_pose, dog_pose, hedgehog_pose
-
-
-TRAMPOLINE_XY = (3.5, 4.12)
-TRAMPOLINE_RADIUS = .73
-TRAMPOLINE_OUTER_RADIUS = TRAMPOLINE_RADIUS + .06
-FENCE_Y = 2.18
-FENCE_ENDPOINTS = (.47, 4.96)
-TOY_XY = (1.74, 2.44)
-TOY_RADIUS = .27
-HEDGE_XY = (1.0, -1.49)
+from ..obstacles import (FENCE_ENDPOINTS, FENCE_Y, HEDGE_XY, STORY_HEDGE_XY,
+                         TOY_RADIUS, TOY_XY, TRAMPOLINE_OUTER_RADIUS,
+                         TRAMPOLINE_RADIUS, TRAMPOLINE_XY, validate_story_layout)
 BALL_RADIUS = .096
 HEDGEHOG_RADIUS = .235
 DOG_RADIUS = .65
+
+
+def shelter_xy(bundle):
+    if bundle.resolved_config.scenario in {"backyard-story", "hedgehog-stays"}:
+        return STORY_HEDGE_XY
+    return HEDGE_XY
 
 
 def trot_step(phase):
@@ -63,6 +62,13 @@ def layout_clearance(bundle):
 def layout_violations(bundle):
     """Return concrete conflicts between the authored blocking and the yard."""
     from ..motion import segments_hit_box
+
+    if bundle.story is not None:
+        try:
+            validate_story_layout(bundle.resolved_config, bundle.terrain, bundle.trajectory.position_m[:, :2])
+        except ValueError as error:
+            return (str(error).removeprefix("Backyard layout conflict — "),)
+        return ()
 
     issues = []
     world = bundle.resolved_config.world

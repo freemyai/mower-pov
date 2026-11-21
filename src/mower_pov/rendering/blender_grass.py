@@ -4,6 +4,10 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..actors.behavior import story_track
+from ..actors.gait import evaluate_dog
+from ..obstacles import (TRAMPOLINE_XY, distance_to_segment, toy_center,
+                         trampoline_uprights)
 from .blender_wind import breeze, leaf_tilt
 from .grass_geometry import clip_blades
 
@@ -22,6 +26,39 @@ def wind_angle(absolute_s, phase, position):
     return .018 * np.sin(5.8 * absolute_s + position) + .015 * np.sin(9.3 * absolute_s + phase)
 
 
+def _press_at(xy, pressure, center, radius, weight):
+    delta = xy - center
+    near = np.flatnonzero((np.abs(delta) < radius).all(axis=1))
+    if near.size:
+        influence = 1 - np.linalg.norm(delta[near], axis=1) / radius
+        pressure[near] = np.maximum(pressure[near], weight * influence)
+
+
+def _prop_pressure(xy, scenario):
+    press = np.zeros(len(xy), dtype=np.float32)
+    for start, end in trampoline_uprights().reshape(3, 2, 2) * 1.05 + TRAMPOLINE_XY:
+        clearance = distance_to_segment(xy, start, end)
+        np.maximum(press, .85 * np.clip(1 - clearance / .072, 0, 1), out=press)
+    _press_at(xy, press, toy_center(scenario), .15, .64)
+    return press
+
+
+def _actor_pressure(xy, pressure, time, terrain, dog, hedgehog):
+    for delay in (0., .12, .24, .36):
+        timestamp = max(0., time - delay)
+        fade = 1 - delay / .45
+        pose = dog.evaluate(timestamp)
+        nearby = np.flatnonzero((np.abs(xy - pose.xy) < .58).all(axis=1))
+        if len(nearby):
+            pressed = pressure[nearby].copy()
+            gait = evaluate_dog(timestamp, terrain, dog)
+            for leg in gait.legs.values():
+                if leg.planted:
+                    _press_at(xy[nearby], pressed, leg.foot_world[:2], .089, .87 * fade)
+            pressure[nearby] = pressed
+        _press_at(xy, pressure, hedgehog.evaluate(timestamp).xy, .16, .72 * fade)
+
+
 @dataclass
 class GrassReplay:
     mesh: object
@@ -38,6 +75,9 @@ class GrassReplay:
     original_variants: np.ndarray
     cut_variants: np.ndarray
     prototypes: tuple
+    terrain: object
+    actors: tuple | None
+    prop_press: np.ndarray
 
     def apply(self, absolute_s):
         h = blade_length(self.h0, self.first_cut, absolute_s, self.target)
@@ -61,6 +101,10 @@ class GrassReplay:
                 footprint = np.maximum(0, 1 - distance / (self.wheel_width * .73))
                 decay = np.repeat(np.maximum(0, 1 - (absolute_s - query) / .75), 2)
                 press[near] = (footprint * decay).max(axis=1)
+
+        if self.actors is not None:
+            np.maximum(press, self.prop_press, out=press)
+            _actor_pressure(self.xy, press, absolute_s, self.terrain, *self.actors)
 
         clipped = (self.cut_variants >= 0) & (absolute_s >= self.first_cut)
         visible_height = np.where(clipped, self.h0, h)
@@ -232,7 +276,10 @@ def make_grass(scene, bundle):
     wheel_times = np.r_[state.wheel_contact_time_s[:, 0], state.wheel_contact_time_s[-1, 1]]
     wheel_points = np.concatenate((state.wheel_contact_xy_m[:, :, 0],
                                    state.wheel_contact_xy_m[-1:, :, 1]))
+    actors = None if bundle.story is None else tuple(
+        story_track(bundle, name) for name in ("dog", "hedgehog"))
+    props = np.zeros(0) if actors is None else _prop_pressure(xyz[:, :2], bundle.resolved_config.scenario)
     return GrassReplay(mesh, xyz[:, :2], roots.h0_m, state.root_first_cut_s, state.cut_height_m,
                        .68 + roots.width_m * 105 + .15 * roots.bend,
                        roots.azimuth_rad, roots.phase, wheel_times, wheel_points, state.wheel_width_m,
-                       variant, cut_variants, tuple(prototypes))
+                       variant, cut_variants, tuple(prototypes), bundle.terrain, actors, props)

@@ -4,11 +4,13 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..actors.behavior import actor_pose, story_track
 from ..actors.gait import DOG_LEGS, STRIDE_M, evaluate_dog
+from ..obstacles import play_rails, toy_center, trampoline_uprights
 from ..terrain import sample_height
-from .life_motion import (BALL_RADIUS, FENCE_ENDPOINTS, FENCE_Y, HEDGE_XY, TOY_XY,
-                          TRAMPOLINE_RADIUS, TRAMPOLINE_XY, ball_pose, hedgehog_pose,
-                          require_life_layout)
+from .blender_dog import SkinnedDog, make_dog
+from .life_motion import (BALL_RADIUS, FENCE_Y, TRAMPOLINE_RADIUS, TRAMPOLINE_XY,
+                          require_life_layout, shelter_xy)
 
 
 def _empty(bpy, name, parent=None, position=(0., 0., 0.)):
@@ -304,7 +306,25 @@ def _dog(bpy):
     return obj, head, ears, tail, legs
 
 
-def _play_area(bpy, terrain):
+def _apply_proxy_dog(dog, gait, time):
+    obj, head, ears, tail, legs = dog
+    pose = gait.root
+    obj.rotation_euler[2] = pose.heading
+    obj.location = (*pose.xy, gait.body_z)
+    phase = 2 * np.pi * pose.distance / STRIDE_M
+    head.rotation_euler = (0., .07 * np.sin(2 * phase) * pose.moving
+                           + .20 * float(np.clip((time - 21.8) / 1.1, 0., 1.)), .115)
+    tail.rotation_euler[2] = pose.moving * .24 * np.sin(phase - .5)
+    for i, ear in enumerate(ears):
+        ear.rotation_euler[1] = pose.moving * .15 * np.sin(2 * phase + .35 * i)
+    for name, (top, bottom, paw) in legs.items():
+        leg = gait.legs[name]
+        _apply_segment(top, leg.hip, leg.knee)
+        _apply_segment(bottom, leg.knee, leg.ankle)
+        paw.location = leg.ankle
+
+
+def _play_area(bpy, terrain, scenario="legacy"):
     from .blender_scene import box, material, tube
 
     beam = material(bpy, "Honey-toned play fence", (.303, .170, .079), .80,
@@ -319,12 +339,13 @@ def _play_area(bpy, terrain):
     yellow = material(bpy, "Golden yellow sand molds", (.68, .42, .081), .54)
     offwhite = material(bpy, "Ivory ball panels", (.70, .63, .44), .68)
     red = material(bpy, "Warm red ball panels", (.68, .102, .045), .72)
-    x0, x1 = FENCE_ENDPOINTS
-    for x in np.linspace(x0, x1, 7):
-        z = float(sample_height(terrain, [x, FENCE_Y]))
-        box(bpy, "Low yard divider post", (x, FENCE_Y, z + .145), (.075, .075, .29), beam, .012)
-    box(bpy, "Low wooden divider rail", ((x0 + x1) / 2, FENCE_Y, .165),
-        (x1 - x0 + .08, .049, .066), beam, .008)
+    for x0, x1 in play_rails(scenario):
+        count = max(2, int(np.ceil((x1 - x0) / .75)) + 1)
+        for x in np.linspace(x0, x1, count):
+            z = float(sample_height(terrain, [x, FENCE_Y]))
+            box(bpy, "Low yard divider post", (x, FENCE_Y, z + .145), (.075, .075, .29), beam, .012)
+        box(bpy, "Low wooden divider rail", ((x0 + x1) / 2, FENCE_Y, .165),
+            (x1 - x0 + .08, .049, .066), beam, .008)
     tx, ty = TRAMPOLINE_XY
     z0 = float(sample_height(terrain, [tx, ty]))
     mat = _empty(bpy, "Mini garden trampoline", position=(tx, ty, z0))
@@ -334,8 +355,7 @@ def _play_area(bpy, terrain):
                 .054, resilient, parent=mat, closed=True)
     _sphere(bpy, "Woven rebound mat", mat, (0, 0, .376),
             (TRAMPOLINE_RADIUS - .039, TRAMPOLINE_RADIUS - .039, .020), textile, 48)
-    angles = np.linspace(0, 2 * np.pi, 6, endpoint=False)
-    uprights = (TRAMPOLINE_RADIUS - .041) * np.column_stack((np.cos(angles), np.sin(angles)))
+    uprights = trampoline_uprights()
     for x, y in uprights:
         tube(bpy, "Padded net upright", (x, y, .36), (.93*x, .93*y, 1.35),
              .027, .022, resilient, 12, mat)
@@ -369,7 +389,7 @@ def _play_area(bpy, terrain):
                   zip(np.linspace(.94, .87, 14), np.linspace(.43, 1.33, 14))]
     _ring_curve(bpy, "Woven enclosure vertical cords", vertical, .0017, textile, parent=mat)
     _ring_curve(bpy, "Woven enclosure horizontal cords", horizontal, .0016, textile, parent=mat, closed=True)
-    x, y = TOY_XY
+    x, y = toy_center(scenario)
     z = float(sample_height(terrain, [x, y]))
     box(bpy, "Toy truck bed", (x, y, z + .092), (.245, .151, .073), blue, .012)
     box(bpy, "Toy truck cab", (x - .075, y, z + .147), (.091, .144, .09), orange, .012)
@@ -392,17 +412,18 @@ def _play_area(bpy, terrain):
 
 @dataclass
 class BackyardLife:
-    terrain: object
+    bundle: object
     hedgehog: tuple
-    dog: tuple
+    dog: SkinnedDog | tuple
     ball: object
 
     def apply(self, time):
         from mathutils import Quaternion
 
         obj, head, feet = self.hedgehog
-        pose = hedgehog_pose(time)
-        obj.location = (*pose.xy, float(sample_height(self.terrain, pose.xy)))
+        terrain = self.bundle.terrain
+        pose = actor_pose(self.bundle, "hedgehog", time)
+        obj.location = (*pose.xy, float(sample_height(terrain, pose.xy)))
         obj.rotation_euler[2] = pose.heading
         head.rotation_euler = (.025 * np.sin(4.3 * time), .11 * np.sin(7.2 * time) + .08, .08 * np.sin(3.7 * time))
         for foot_idx, (foot, x) in enumerate(zip(feet, (.065, -.094, .065, -.094))):
@@ -410,31 +431,20 @@ class BackyardLife:
             foot.location.x = x + pose.moving * .023 * np.cos(phase)
             foot.location.z = .016 + pose.moving * .011 * max(0., np.sin(phase))
 
-        obj, head, ears, tail, legs = self.dog
-        gait = evaluate_dog(time, self.terrain)
-        pose = gait.root
-        obj.rotation_euler[2] = pose.heading
-        obj.location = (*pose.xy, gait.body_z)
-        phase = 2 * np.pi * pose.distance / STRIDE_M
-        head.rotation_euler = (0., .07 * np.sin(2 * phase) * pose.moving
-                               + .20 * float(np.clip((time - 21.8) / 1.1, 0., 1.)), .115)
-        tail.rotation_euler[2] = pose.moving * .24 * np.sin(phase - .5)
-        for i, ear in enumerate(ears):
-            ear.rotation_euler[1] = pose.moving * .15 * np.sin(2 * phase + .35 * i)
-        for name, (top, bottom, paw) in legs.items():
-            leg = gait.legs[name]
-            _apply_segment(top, leg.hip, leg.knee)
-            _apply_segment(bottom, leg.knee, leg.ankle)
-            paw.location = leg.ankle
+        gait = evaluate_dog(time, terrain, story_track(self.bundle, "dog"))
+        if isinstance(self.dog, SkinnedDog):
+            self.dog.apply(gait)
+        else:
+            _apply_proxy_dog(self.dog, gait, time)
 
-        pose = ball_pose(time)
-        self.ball.location = (*pose.xy, float(sample_height(self.terrain, pose.xy)) + BALL_RADIUS)
+        pose = actor_pose(self.bundle, "ball", time)
+        self.ball.location = (*pose.xy, float(sample_height(terrain, pose.xy)) + BALL_RADIUS)
         self.ball.rotation_mode = "QUATERNION"
         self.ball.rotation_quaternion = (Quaternion((0., 1., 0.), -pose.distance / BALL_RADIUS)
                                          @ Quaternion((0., 0., 1.), .23))
 
 
-def make_backyard_life(bpy, bundle):
+def make_backyard_life(bpy, bundle, *, debug_dog=None):
     from .blender_scene import _foliage, material
 
     require_life_layout(bundle)
@@ -443,7 +453,10 @@ def make_backyard_life(bpy, bundle):
     leaf = [material(bpy, f"Hedgehog shelter leaf {i}", color, .71, translucency=.24)
             for i, color in enumerate(((.133, .215, .049), (.101, .163, .040), (.183, .234, .051)))]
     shelter = _foliage(bpy, "Low hedgehog shelter", rng,
-                       [((*HEDGE_XY, .125), (.37, .29, .139), 1340, (.024, .066))],
+                       [((*shelter_xy(bundle), .125), (.37, .29, .139), 1340, (.024, .066))],
                        leaf, .32)
-    return BackyardLife(bundle.terrain, _hedgehog(bpy, seed), _dog(bpy),
-                        _play_area(bpy, bundle.terrain)), shelter
+    if debug_dog is None:
+        debug_dog = bundle.story is None
+    dog = _dog(bpy) if debug_dog else make_dog(bpy, seed)
+    return BackyardLife(bundle, _hedgehog(bpy, seed), dog,
+                        _play_area(bpy, bundle.terrain, bundle.resolved_config.scenario)), shelter

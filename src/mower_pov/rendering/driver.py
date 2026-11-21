@@ -13,6 +13,7 @@ from pathlib import Path
 
 from ..cache import _code_identity, compute_run_id, load_bundle
 from .blender_scene import PRESETS
+from .shutter import Exposure
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,10 @@ class RenderRequest:
     exr: bool = False
     view: str = "onboard"
     yard: str = "legacy"
+    shutter_ms: float = 0.
+    shutter_samples: int = 3
+    deep_focus: bool = False
+    png_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -96,7 +101,7 @@ def _write_manifest(path, value):
     partial.replace(path)
 
 
-def _render_locked(request, executable, output, settings, manifest, lock_fd):
+def _render_locked(request, executable, output, settings, manifest, lock_fd, scratch_bytes):
     frames = request.frame_indices
     manifest_path = output / "request.json"
     worker_log = output / "blender.log"
@@ -114,7 +119,7 @@ def _render_locked(request, executable, output, settings, manifest, lock_fd):
     exit_code = 0
     if missing:
         estimate = (48 if settings["linear"] else 4) * 1024**2 * len(missing)
-        require_render_space(output, estimate)
+        require_render_space(output, estimate + scratch_bytes)
         # End any partial log line before the new batch appends further checksums.
         if stats_path.exists():
             with stats_path.open("a") as log:
@@ -163,8 +168,24 @@ def render_frames(request: RenderRequest) -> RenderResult:
         from .blender_house import assets_for_house
 
         _, asset_digest = assets_for_house()
+        for asset in state.manifest["identity"].get("assets", ()):
+            if asset["path"] == "assets/catalog.lock.json" and asset["sha256"] != asset_digest:
+                raise ValueError("the current yard asset catalog differs from the work bundle")
     if request.preset not in PRESETS:
         raise ValueError(f"unknown preset {request.preset}")
+    if request.exr and request.png_only:
+        raise ValueError("PNG-only output is incompatible with EXR output")
+    exposure = Exposure(float(request.shutter_ms), request.shutter_samples)
+    exposure.sample_frames(frames[0], config.render.fps, config.world.duration_s)
+    if exposure.milliseconds and request.view != "onboard":
+        raise ValueError("subframe exposure requires the fixed onboard view")
+    linear = request.preset == "final" and request.denoise and not request.exr and not request.png_only
+    scratch_bytes = 0
+    if exposure.milliseconds:
+        width, height, _ = PRESETS[request.preset]
+        if request.preset == "final":
+            width, height = config.render.width, config.render.height
+        scratch_bytes = width * height * exposure.samples * (80 if linear or request.exr else 16)
     executable = Path(shutil.which(str(request.blender)) or request.blender).resolve()
     version = subprocess.check_output([str(executable), "--version"], timeout=30, text=True)
     if not re.search(rf"^Blender {re.escape(config.render.engine_version)}(?:\s|$)", version):
@@ -178,7 +199,9 @@ def render_frames(request: RenderRequest) -> RenderResult:
         "gpu_index": request.gpu_index, "denoise": request.denoise, "view": request.view,
         "format": "OPEN_EXR_MULTILAYER" if request.exr else "PNG",
         "yard": request.yard, "asset_digest": asset_digest,
-        "linear": request.preset == "final" and request.denoise and not request.exr,
+        "linear": linear, "shutter_ms": exposure.milliseconds,
+        "shutter_samples": exposure.samples if exposure.milliseconds else 1,
+        "deep_focus": request.deep_focus,
     }
     identity = {k: v for k, v in settings.items() if k not in ("run_dir", "output_dir")}
     build_hash = next((line.split(":", 1)[1].strip() for line in version.splitlines()
@@ -188,7 +211,7 @@ def render_frames(request: RenderRequest) -> RenderResult:
     manifest = {"fingerprint": compute_run_id(identity), "identity": identity}
     with (output / ".render.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        return _render_locked(request, executable, output, settings, manifest, lock.fileno())
+        return _render_locked(request, executable, output, settings, manifest, lock.fileno(), scratch_bytes)
 
 
 def parse_frames(spec: str) -> tuple[int, ...]:

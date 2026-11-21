@@ -70,6 +70,7 @@ class RunConfig:
     grass: GrassConfig
     render: RenderConfig
     audio: AudioConfig
+    scenario: str = "legacy"
 
     @property
     def frame_count(self) -> int:
@@ -164,7 +165,16 @@ class Event:
 class EventLog:
     events: tuple[Event, ...]
 
-
+@dataclass(frozen=True)
+class StoryState:
+    # Tracks hold actor rows [start_s, end_s, start_x, start_y, end_x, end_y].
+    tracks: np.ndarray
+    mode: np.ndarray
+    blocked: np.ndarray
+    obstacle_name: np.ndarray
+    clearance_m: np.ndarray
+    blade_command: np.ndarray
+    rotor_fraction: np.ndarray
 
 
 @dataclass(frozen=True)
@@ -178,3 +188,4 @@ class RunBundle:
     cut_state: CutState
     events: EventLog
     manifest: Mapping[str, object]
+    story: StoryState | None = None

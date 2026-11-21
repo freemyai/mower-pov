@@ -16,15 +16,16 @@ from zipfile import BadZipFile
 import numpy as np
 
 from .config import config_from_dict
-from .contracts import BladeRoots, CutState, RunBundle, RunConfig, Terrain, Trajectory
+from .contracts import BladeRoots, CutState, RunBundle, RunConfig, StoryState, Terrain, Trajectory
 from .cutting import compute_cut_state
 from .events import build_events, events_from_json, events_to_json
 from .motion import integrate_motion, make_demo_schedule, validate_swept_body
 from .terrain import build_terrain, generate_blade_roots
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 ARRAY_FILES = {"terrain.npz", "trajectory.npz", "grass_state.npz"}
 BUNDLE_FILES = ARRAY_FILES | {"config.json", "events.json"}
+STORY_FILE = "story.npz"
 
 
 def _json(value):
@@ -49,12 +50,15 @@ def _record_arrays(record, prefix=""):
     return {prefix + field.name: np.asarray(getattr(record, field.name)) for field in fields(record)}
 
 
-def _datasets(terrain, trajectory, roots, state):
-    return {
+def _datasets(terrain, trajectory, roots, state, story=None):
+    data = {
         "terrain.npz": _record_arrays(terrain),
         "trajectory.npz": _record_arrays(trajectory),
         "grass_state.npz": {**_record_arrays(roots, "roots_"), **_record_arrays(state, "state_")},
     }
+    if story is not None:
+        data[STORY_FILE] = _record_arrays(story)
+    return data
 
 
 def _array_identity(data):
@@ -110,15 +114,25 @@ def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
                 environment: Mapping | None = None) -> RunBundle:
     config = config_from_dict(asdict(config))
     terrain = build_terrain(config)
-    trajectory = integrate_motion(config, terrain, make_demo_schedule(config, terrain))
+    story = None
+    if config.scenario == "legacy":
+        trajectory = integrate_motion(config, terrain, make_demo_schedule(config, terrain))
+    else:
+        from .controller import run_controller
+
+        trajectory, story = run_controller(config, terrain)
     violations = validate_swept_body(config, terrain, trajectory)
     if violations:
         first = min(violations, key=lambda v: v.time_s)
         raise ValueError(f"invalid demo at {first.time_s:.3f}s: {first.reason}")
     roots = generate_blade_roots(config, terrain)
     state = compute_cut_state(config, terrain, trajectory, roots)
-    events = build_events(config, trajectory, state, roots)
-    data = _datasets(terrain, trajectory, roots, state)
+    events = build_events(config, trajectory, state, roots, story=story)
+    data = _datasets(terrain, trajectory, roots, state, story)
+    assets = []
+    if story is not None:
+        catalog = Path(__file__).resolve().parents[2] / "assets" / "catalog.lock.json"
+        assets.append({"path": "assets/catalog.lock.json", "sha256": _hash_file(catalog)})
     build = dict(environment or {})
     toolchain = {name: build.get(name) for name in (
         "blender", "ffmpeg", "ffprobe", "verified_device", "cycles_devices", "nvidia_smi")}
@@ -132,13 +146,16 @@ def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
         "events_sha256": _hash_bytes(events_to_json(events).encode()),
         "python": platform.python_version(), "numpy": np.__version__, "toolchain": toolchain,
     }
+    if assets:
+        identity["assets"] = assets
     run_id = compute_run_id(identity)
     manifest = {"schema_version": SCHEMA_VERSION, "run_id": run_id, "identity": identity,
-                "git_commit": _git_commit(), "environment": build, "assets": []}
+                "git_commit": _git_commit(), "environment": build, "assets": assets}
     return RunBundle(
         run_id, Path(base_dir) / run_id, config, _record(Terrain, data["terrain.npz"]),
         _record(Trajectory, data["trajectory.npz"]), _record(BladeRoots, data["grass_state.npz"], "roots_"),
         _record(CutState, data["grass_state.npz"], "state_"), events, _freeze(manifest),
+        _record(StoryState, data[STORY_FILE]) if story is not None else None,
     )
 
 
@@ -152,12 +169,13 @@ def save_bundle(bundle: RunBundle) -> Path:
     # Publish a complete directory in one rename, including on concurrent prepares.
     with tempfile.TemporaryDirectory(prefix=".prepare-", dir=target.parent) as staging:
         path = Path(staging)
-        for name, arrays in _datasets(bundle.terrain, bundle.trajectory, bundle.roots, bundle.cut_state).items():
+        data = _datasets(bundle.terrain, bundle.trajectory, bundle.roots, bundle.cut_state, bundle.story)
+        for name, arrays in data.items():
             np.savez_compressed(path / name, **arrays)
         (path / "config.json").write_text(_json(asdict(bundle.resolved_config)), encoding="utf8")
         (path / "events.json").write_text(events_to_json(bundle.events), encoding="utf8")
         manifest = _thaw(bundle.manifest)
-        manifest["files"] = {name: _hash_file(path / name) for name in sorted(BUNDLE_FILES)}
+        manifest["files"] = {name: _hash_file(path / name) for name in sorted(BUNDLE_FILES | data.keys())}
         (path / "manifest.json").write_text(_json(manifest), encoding="utf8")
         if load_bundle(path).run_id != bundle.run_id:
             raise ValueError("bundle identity changed during preparation")
@@ -180,14 +198,18 @@ def load_bundle(run_dir: Path) -> RunBundle:
     path = Path(run_dir)
     manifest = json.loads(_read_text(path / "manifest.json"))
     if (not isinstance(manifest, dict) or type(manifest.get("schema_version")) is not int
-            or manifest["schema_version"] != SCHEMA_VERSION):
+            or manifest["schema_version"] not in {1, SCHEMA_VERSION}):
         raise ValueError("unsupported bundle schema")
-    if not isinstance(manifest.get("files"), dict) or set(manifest["files"]) != BUNDLE_FILES:
+    schema = manifest["schema_version"]
+    array_files = ARRAY_FILES
+    if schema >= 2 and isinstance(manifest.get("files"), dict) and STORY_FILE in manifest["files"]:
+        array_files = ARRAY_FILES | {STORY_FILE}
+    if not isinstance(manifest.get("files"), dict) or set(manifest["files"]) != BUNDLE_FILES | array_files:
         raise ValueError("bundle files missing or unknown")
     identity = manifest.get("identity")
-    if (not isinstance(identity, dict) or identity.get("schema_version") != SCHEMA_VERSION
+    if (not isinstance(identity, dict) or identity.get("schema_version") != schema
             or not isinstance(identity.get("arrays"), dict)
-            or set(identity["arrays"]) != ARRAY_FILES
+            or set(identity["arrays"]) != array_files
             or "config" not in identity or "events_sha256" not in identity
             or manifest.get("run_id") != compute_run_id(identity)):
         raise ValueError("invalid bundle identity")
@@ -196,7 +218,7 @@ def load_bundle(run_dir: Path) -> RunBundle:
             raise ValueError(f"missing or corrupt bundle file: {name}")
 
     arrays = {}
-    for name in ARRAY_FILES:
+    for name in array_files:
         try:
             with np.load(path / name, allow_pickle=False) as data:
                 arrays[name] = dict(data)
@@ -207,15 +229,20 @@ def load_bundle(run_dir: Path) -> RunBundle:
 
     config = config_from_dict(json.loads(_read_text(path / "config.json")))
     event_text = _read_text(path / "events.json")
-    if _json(asdict(config)) != _json(identity["config"]) or _hash_bytes(event_text.encode()) != identity[
-        "events_sha256"
-    ]:
+    normalized = asdict(config)
+    if schema == 1:
+        normalized.pop("scenario")
+    if (_json(normalized) != _json(identity["config"])
+            or _hash_bytes(event_text.encode()) != identity["events_sha256"]
+            or (config.scenario == "legacy") != (STORY_FILE not in arrays)
+            or manifest.get("assets", []) != identity.get("assets", [])):
         raise ValueError("bundle content disagrees with identity")
     try:
         return RunBundle(manifest["run_id"], path, config, _record(Terrain, arrays["terrain.npz"]),
                          _record(Trajectory, arrays["trajectory.npz"]),
                          _record(BladeRoots, arrays["grass_state.npz"], "roots_"),
                          _record(CutState, arrays["grass_state.npz"], "state_"),
-                         events_from_json(event_text), _freeze(manifest))
+                         events_from_json(event_text), _freeze(manifest),
+                         _record(StoryState, arrays[STORY_FILE]) if STORY_FILE in arrays else None)
     except (KeyError, TypeError) as exc:
         raise ValueError("bundle is missing required data") from exc

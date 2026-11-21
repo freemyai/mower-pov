@@ -1,0 +1,5 @@
+extends = "backyard.toml"
+scenario = "backyard-story"
+
+[render]
+samples = 40

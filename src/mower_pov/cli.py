@@ -30,9 +30,16 @@ def main(argv=None):
     render.add_argument("--device", choices=["CPU", "OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"], default="CPU")
     render.add_argument("--gpu-index", type=int, default=0)
     render.add_argument("--undenoised", action="store_true")
-    render.add_argument("--exr", action="store_true")
+    output_format = render.add_mutually_exclusive_group()
+    output_format.add_argument("--exr", action="store_true")
+    output_format.add_argument("--png-only", action="store_true", help="Skip final preset EXR sidecars")
     render.add_argument("--yard", choices=("legacy", "house"), default="legacy")
     render.add_argument("--view", choices=("onboard", "showcase"), default="onboard")
+    render.add_argument("--shutter-ms", type=float, default=0,
+                        help="Centered exposure duration in milliseconds (0 for an instantaneous frame)")
+    render.add_argument("--shutter-samples", type=int, default=3,
+                        help="Odd number of temporal samples for an active shutter (default: 3)")
+    render.add_argument("--deep-focus", action="store_true", help="Disable depth of field")
     encode = commands.add_parser("encode-preview")
     encode.add_argument("directories", nargs="+", type=Path)
     encode.add_argument("--frames", required=True, help="A contiguous half-open absolute range")
@@ -71,7 +78,9 @@ def main(argv=None):
 
         request = RenderRequest(args.run_dir, parse_frames(args.frames), args.preset,
                                 args.output, args.blender, args.device, args.gpu_index,
-                                not args.undenoised, args.exr, args.view, args.yard)
+                                not args.undenoised, args.exr, args.view, args.yard,
+                                shutter_ms=args.shutter_ms, shutter_samples=args.shutter_samples,
+                                deep_focus=args.deep_focus, png_only=args.png_only)
         result = render_frames(request)
         print(f"Rendered {len(result.produced_frames)}/{len(request.frame_indices)} frames in {result.output_dir}")
         if result.failed_frames:

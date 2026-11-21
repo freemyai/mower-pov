@@ -1,0 +1,2 @@
+extends = "../backyard-dynamic.toml"
+scenario = "hedgehog-stays"

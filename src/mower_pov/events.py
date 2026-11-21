@@ -10,7 +10,7 @@ from .contracts import BladeRoots, CutState, Event, EventLog, RunConfig, Traject
 
 
 def build_events(config: RunConfig, trajectory: Trajectory, state: CutState,
-                 roots: BladeRoots) -> EventLog:
+                 roots: BladeRoots, *, story=None) -> EventLog:
     t = trajectory.time_s
     pos = trajectory.position_m
     events = []
@@ -25,6 +25,17 @@ def build_events(config: RunConfig, trajectory: Trajectory, state: CutState,
     ):
         for i in np.flatnonzero(np.diff(signal, prepend=False)):
             emit(t[i], on if signal[i] else off, float(signal[i]))
+
+    if story is not None:
+        for signal, on, off in (
+            (story.blade_command, "blade_command_on", "blade_command_off"),
+            (story.rotor_fraction > 0, "rotor_started", "rotor_stopped"),
+        ):
+            for i in np.flatnonzero(np.diff(signal, prepend=False)):
+                emit(t[i], on if signal[i] else off, float(story.rotor_fraction[i]))
+        for i in np.flatnonzero(story.mode != np.concatenate(([""], story.mode[:-1]))):
+            emit(t[i], f"controller_{story.mode[i].lower()}", float(trajectory.v_mps[i]),
+                 clearance_m=float(story.clearance_m[i]))
 
     # Estimate vertical acceleration from completed trajectory intervals.
     dt = np.diff(t)
