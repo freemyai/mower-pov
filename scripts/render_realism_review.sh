@@ -3,14 +3,14 @@
 set -euo pipefail
 
 if (( $# != 3 )); then
-    printf 'Usage: %s RUN_BUNDLE BLENDER NEW_OUTPUT_DIR\n' "$0" >&2
+    printf 'Usage: %s RUN_BUNDLE BLENDER OUTPUT_DIR\n' "$0" >&2
     exit 2
 fi
 run=$1
 blender=$2
 out=$3
 python=${MOWER_PYTHON:-.venv/bin/python}
-mkdir "$out"
+mkdir -p "$out"
 render() {
     "$python" -m mower_pov render "$run" --blender "$blender" --device OPTIX --preset preview "$@"
 }

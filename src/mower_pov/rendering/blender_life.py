@@ -334,12 +334,31 @@ def _play_area(bpy, terrain):
                 .054, resilient, parent=mat, closed=True)
     _sphere(bpy, "Woven rebound mat", mat, (0, 0, .376),
             (TRAMPOLINE_RADIUS - .039, TRAMPOLINE_RADIUS - .039, .020), textile, 48)
-    for theta in np.linspace(0, 2 * np.pi, 6, endpoint=False):
-        x, y = (TRAMPOLINE_RADIUS - .041) * np.array([np.cos(theta), np.sin(theta)])
-        tube(bpy, "Support leg", (x * 1.06, y * 1.06, .019), (x, y, .37),
-             .026, .026, metal, 12, mat)
+    angles = np.linspace(0, 2 * np.pi, 6, endpoint=False)
+    uprights = (TRAMPOLINE_RADIUS - .041) * np.column_stack((np.cos(angles), np.sin(angles)))
+    for x, y in uprights:
         tube(bpy, "Padded net upright", (x, y, .36), (.93*x, .93*y, 1.35),
              .027, .022, resilient, 12, mat)
+    for a, b in uprights.reshape(3, 2, 2):
+        start, end = a * 1.050, b * 1.050
+        ground_a, ground_b = sample_height(terrain, np.array([start, end]) + [tx, ty]) - z0
+        base_a = np.array([*start, ground_a + .024])
+        base_b = np.array([*end, ground_b + .024])
+        radius = .041
+        length = np.linalg.norm(end - start)
+        u = radius / length
+        along = (base_b - base_a) / length
+        # Each bent U frame has two endpoint contacts fitted to the actual lawn.
+        path = [[*a, .375], base_a + [0, 0, radius * 1.5]]
+        path.extend(base_a + radius * (along * (1 - np.cos(t)) + [0, 0, 1 - np.sin(t)])
+                    for t in np.linspace(0, np.pi/2, 7))
+        middle = [base_a + fraction * (base_b - base_a)
+                  for fraction in np.linspace(u, 1 - u, 5)[1:-1]]
+        path.extend(middle)
+        path.extend(base_b + radius * (-along * (1 - np.cos(t)) + [0, 0, 1 - np.sin(t)])
+                    for t in np.linspace(np.pi/2, 0, 7))
+        path.extend((base_b + [0, 0, radius * 1.5], [*b, .375]))
+        _ring_curve(bpy, "Bent U-leg support", [np.asarray(path)], .026, metal, parent=mat)
     _ring_curve(bpy, "Enclosure top band", [np.column_stack((xy * .87, np.full(80, 1.35)))],
                 .015, metal, parent=mat, closed=True)
     net_angles = np.linspace(0, 2 * np.pi, 52, endpoint=False)

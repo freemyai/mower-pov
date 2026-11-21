@@ -65,3 +65,11 @@ def test_scene_conflict_is_reported_not_hidden(tmp_path):
     })
     with pytest.raises(ValueError, match="dog.*flower bed"):
         require_life_layout(prepare_run(config, tmp_path))
+
+
+def test_trampoline_padding_clears_perimeter_in_the_stock_yard():
+    from mower_pov.rendering.life_motion import TRAMPOLINE_RADIUS, TRAMPOLINE_XY
+
+    cfg = load_config("configs/backyard.toml")
+    inner_fence_y = cfg.world.depth_m / 2 - .04 - .041 / 2
+    assert TRAMPOLINE_XY[1] + TRAMPOLINE_RADIUS + .054 < inner_fence_y
