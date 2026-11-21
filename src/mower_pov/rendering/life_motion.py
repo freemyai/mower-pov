@@ -1,37 +1,8 @@
 """Absolute-time blocking for the garden animals and props."""
 
-from dataclasses import dataclass
-
 import numpy as np
 
-
-@dataclass(frozen=True)
-class ActorPose:
-    xy: tuple[float, float]
-    heading: float
-    distance: float
-    moving: float
-
-
-def _travel(time, start_s, end_s, start, end):
-    start_xy = np.asarray(start)
-    delta = np.asarray(end) - start_xy
-    u = float(np.clip((time - start_s) / (end_s - start_s), 0., 1.))
-    progress = u ** 2 * (3. - 2. * u)
-    return ActorPose(tuple(start_xy + progress * delta), float(np.arctan2(delta[1], delta[0])),
-                     float(progress * np.linalg.norm(delta)), float(4 * u * (1 - u)))
-
-
-def hedgehog_pose(time):
-    return _travel(time, .9, 4.25, (1.28, -.71), (.99, -1.45))
-
-
-def ball_pose(time):
-    return _travel(time, 17.25, 22.25, (4.46, 2.91), (.40, 2.91))
-
-
-def dog_pose(time):
-    return _travel(time, 17.6, 22.8, (4.96, 3.14), (.90, 3.14))
+from ..actors.behavior import ball_pose, dog_pose, hedgehog_pose
 
 
 TRAMPOLINE_XY = (3.5, 4.23)
@@ -88,23 +59,38 @@ def layout_clearance(bundle):
     return values
 
 
-def layout_available(bundle):
-    """Check that the fixed blocking fits the yard and its configured flower bed."""
+def layout_violations(bundle):
+    """Return concrete conflicts between the authored blocking and the yard."""
     from ..motion import segments_hit_box
 
+    issues = []
     world = bundle.resolved_config.world
     if world.width_m < 11.15 or world.depth_m < 9.95:
-        return False
-    if min(layout_clearance(bundle).values()) < .09:
-        return False
+        issues.append(f"yard too small for the authored layout ({world.width_m:g} × {world.depth_m:g} m)")
+    for name, clearance in layout_clearance(bundle).items():
+        if clearance < .09:
+            issues.append(f"{name} has only {clearance:.3f} m clearance from the mower sweep")
 
     bed = np.asarray(bundle.terrain.obstacle_xyxy_m)
-    bounds = [(track(0).xy, track(40).xy, radius)
-              for track, radius in ((hedgehog_pose, HEDGEHOG_RADIUS), (dog_pose, DOG_RADIUS),
-                                    (ball_pose, BALL_RADIUS))]
-    bounds.append(((FENCE_ENDPOINTS[0], FENCE_Y), (FENCE_ENDPOINTS[1], FENCE_Y), .075))
-    bounds.extend((xy, xy, radius) for xy, radius in (
-        (TRAMPOLINE_XY, TRAMPOLINE_RADIUS + .06), (TOY_XY, TOY_RADIUS), (HEDGE_XY, .46),
+    bounds = [(name, track(0).xy, track(40).xy, radius)
+              for name, track, radius in (("hedgehog", hedgehog_pose, HEDGEHOG_RADIUS),
+                                          ("dog", dog_pose, DOG_RADIUS), ("ball", ball_pose, BALL_RADIUS))]
+    bounds.append(("fence", (FENCE_ENDPOINTS[0], FENCE_Y), (FENCE_ENDPOINTS[1], FENCE_Y), .075))
+    bounds.extend((name, xy, xy, radius) for name, xy, radius in (
+        ("trampoline", TRAMPOLINE_XY, TRAMPOLINE_RADIUS + .06),
+        ("toys", TOY_XY, TOY_RADIUS), ("hedge", HEDGE_XY, .46),
     ))
-    return all(not segments_hit_box(np.asarray([a]), np.asarray([b]), bed[:2] - r, bed[2:] + r)[0]
-               for a, b, r in bounds)
+    for name, a, b, radius in bounds:
+        if segments_hit_box(np.asarray([a]), np.asarray([b]), bed[:2] - radius, bed[2:] + radius)[0]:
+            issues.append(f"{name} overlaps the flower bed")
+    return tuple(issues)
+
+
+def layout_available(bundle):
+    return not layout_violations(bundle)
+
+
+def require_life_layout(bundle):
+    issues = layout_violations(bundle)
+    if issues:
+        raise ValueError("Backyard layout conflict — " + " | ".join(issues))

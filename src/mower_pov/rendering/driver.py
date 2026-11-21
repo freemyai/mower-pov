@@ -27,6 +27,7 @@ class RenderRequest:
     denoise: bool = True
     exr: bool = False
     view: str = "onboard"
+    yard: str = "legacy"
 
 
 @dataclass(frozen=True)
@@ -143,7 +144,10 @@ def _render_locked(request, executable, output, settings, manifest, lock_fd):
 
 
 def render_frames(request: RenderRequest) -> RenderResult:
+    from .life_motion import require_life_layout
+
     state = load_bundle(request.run_dir)
+    require_life_layout(state)
     config = state.resolved_config
     frames = request.frame_indices
     if not frames or any(type(i) is not int or not 0 <= i < config.frame_count for i in frames):
@@ -152,6 +156,13 @@ def render_frames(request: RenderRequest) -> RenderResult:
         raise ValueError("duplicate frame index")
     if request.view not in {"onboard", "showcase"}:
         raise ValueError(f"unknown camera view {request.view}")
+    if request.yard not in {"legacy", "house"}:
+        raise ValueError(f"unknown yard layout {request.yard}")
+    asset_digest = None
+    if request.yard == "house":
+        from .blender_house import assets_for_house
+
+        _, asset_digest = assets_for_house()
     if request.preset not in PRESETS:
         raise ValueError(f"unknown preset {request.preset}")
     executable = Path(shutil.which(str(request.blender)) or request.blender).resolve()
@@ -166,6 +177,7 @@ def render_frames(request: RenderRequest) -> RenderResult:
         "preset": request.preset, "frames": list(frames), "device": request.device,
         "gpu_index": request.gpu_index, "denoise": request.denoise, "view": request.view,
         "format": "OPEN_EXR_MULTILAYER" if request.exr else "PNG",
+        "yard": request.yard, "asset_digest": asset_digest,
         "linear": request.preset == "final" and request.denoise and not request.exr,
     }
     identity = {k: v for k, v in settings.items() if k not in ("run_dir", "output_dir")}

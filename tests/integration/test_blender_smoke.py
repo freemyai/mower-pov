@@ -49,17 +49,36 @@ def test_blender_subframe_state_uses_cached_roots(blender, tmp_path):
 
         shot = build_scene({str(run)!r}, "smoke")
         state = shot.bundle.cut_state
-        i = int(np.flatnonzero(np.isfinite(state.root_first_cut_s))[0])
+        i = int(np.flatnonzero((shot.grass.cut_variants >= 0) & (state.root_first_cut_s > 0))[0])
         f = state.root_first_cut_s[i] * shot.scene.render.fps
         mesh = shot.grass.mesh
         location = tuple(mesh.vertices[i].co)
         stable_id = mesh.attributes["root_id"].data[i].value
         shot.apply(f - .01)
-        original = mesh.attributes["leaf_scale"].data[i].vector.z / 10
+        original = mesh.attributes["leaf_scale"].data[i].vector.z
+        old_index = mesh.attributes["leaf_variant"].data[i].value
         shot.apply(f + .01)
-        cut = mesh.attributes["leaf_scale"].data[i].vector.z / 10
-        assert abs(original - shot.bundle.roots.h0_m[i]) < 1e-7
-        assert abs(cut - state.cut_height_m) < 1e-7
+        cut = mesh.attributes["leaf_scale"].data[i].vector.z
+        new_index = mesh.attributes["leaf_variant"].data[i].value
+        assert old_index == shot.grass.original_variants[i]
+        assert new_index == shot.grass.cut_variants[i] and new_index != old_index
+        assert abs(original / 10 - shot.bundle.roots.h0_m[i]) < 1e-7
+        assert cut == original
+        cut_mesh = shot.grass.prototypes[new_index].data
+        resulting_height = max(v.co.z for v in cut_mesh.vertices) * original
+        assert 0 <= state.cut_height_m - resulting_height < .00121
+        # Inspect the mesh attached to this root in the evaluated node instances.
+        for instance in bpy.context.evaluated_depsgraph_get().object_instances:
+            if not instance.is_instance or instance.parent.name != "Grass from the work-state cache":
+                continue
+            offset = np.array(instance.matrix_world.translation) - np.array(location)
+            if np.linalg.norm(offset) < 1e-6:
+                vertices = instance.object.data.vertices
+                assert len(vertices) == len(cut_mesh.vertices)
+                assert abs(max(v.co.z for v in vertices) * original - resulting_height) < 1e-7
+                break
+        else:
+            raise AssertionError("missing evaluated cut-root instance")
         assert stable_id == mesh.attributes["root_id"].data[i].value
         assert location == tuple(mesh.vertices[i].co)
         leaves = shot.foliage[-1]
@@ -94,7 +113,7 @@ def test_blender_subframe_state_uses_cached_roots(blender, tmp_path):
         assert abs(max(obj.location.y for obj in tires) - track / 2) < 1e-7
         shot.scene.render.use_motion_blur = True
         shot.apply(f + .01)
-        assert cut == mesh.attributes["leaf_scale"].data[i].vector.z / 10
+        assert cut == mesh.attributes["leaf_scale"].data[i].vector.z
     """)
     script = tmp_path / "verify_scene.py"
     script.write_text(snippet)

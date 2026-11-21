@@ -4,10 +4,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from ..actors.gait import DOG_LEGS, STRIDE_M, evaluate_dog
 from ..terrain import sample_height
 from .life_motion import (BALL_RADIUS, FENCE_ENDPOINTS, FENCE_Y, HEDGE_XY, TOY_XY,
-                          TRAMPOLINE_RADIUS, TRAMPOLINE_XY, ball_pose, dog_pose, hedgehog_pose,
-                          layout_available, trot_step)
+                          TRAMPOLINE_RADIUS, TRAMPOLINE_XY, ball_pose, hedgehog_pose,
+                          require_life_layout)
 
 
 def _empty(bpy, name, parent=None, position=(0., 0., 0.)):
@@ -249,7 +250,7 @@ def _fur_fibers(bpy, surface, parent, seed, mat, count):
 def _dog(bpy):
     from .blender_scene import material
 
-    obj = _empty(bpy, "Cream and caramel garden dog")
+    obj = _empty(bpy, "Debug proxy · garden dog")
     coat = material(bpy, "Golden terrier coat", (.49, .252, .092), .84,
                     surface_noise=(67, .28, .009), grain=(.50, 1.5, 1.25))
     dark = material(bpy, "Caramel ears and saddle", (.234, .102, .042), .81,
@@ -293,13 +294,13 @@ def _dog(bpy):
                    .044, .039, coat)
     _oriented_oval(bpy, "Tail tip", tail, (-.129, .012, .071), (-.247, .019, .158),
                    .027, .024, cream)
-    legs = []
-    for x, y, phase in ((.157, -.088, 0.), (-.169, .088, 0.),
-                         (.157, .088, .5), (-.169, -.088, .5)):
-        top = _limb(bpy, "Dog upper leg", obj, coat, .043 if x > 0 else .052, .035)
+    legs = {}
+    for spec in DOG_LEGS:
+        top = _limb(bpy, "Dog upper leg", obj, coat, .043 if spec.x > 0 else .052, .035)
         bottom = _limb(bpy, "Dog shin", obj, cream, .036, .025)
-        paw = _sphere(bpy, "Rounded dog paw", obj, (x, y, .030), (.056, .034, .029), cream)
-        legs.append((x, y, phase, top, bottom, paw))
+        paw = _sphere(bpy, "Rounded dog paw", obj, (spec.x, spec.y, .029),
+                      (.056, .034, .029), cream)
+        legs[spec.name] = top, bottom, paw
     return obj, head, ears, tail, legs
 
 
@@ -391,29 +392,21 @@ class BackyardLife:
             foot.location.z = .016 + pose.moving * .011 * max(0., np.sin(phase))
 
         obj, head, ears, tail, legs = self.dog
-        pose = dog_pose(time)
+        gait = evaluate_dog(time, self.terrain)
+        pose = gait.root
         obj.rotation_euler[2] = pose.heading
-        orbit = pose.distance / .40
-        bob = pose.moving * .018 * (1. - np.cos(4 * np.pi * orbit))
-        origin_z = float(sample_height(self.terrain, pose.xy))
-        obj.location = (*pose.xy, origin_z + bob)
-        head.rotation_euler = (0., .14 * np.sin(2 * np.pi * orbit) * pose.moving
+        obj.location = (*pose.xy, gait.body_z)
+        phase = 2 * np.pi * pose.distance / STRIDE_M
+        head.rotation_euler = (0., .07 * np.sin(2 * phase) * pose.moving
                                + .20 * float(np.clip((time - 21.8) / 1.1, 0., 1.)), .115)
-        tail.rotation_euler[2] = .37 * np.sin(11.5 * time)
+        tail.rotation_euler[2] = pose.moving * .24 * np.sin(phase - .5)
         for i, ear in enumerate(ears):
-            ear.rotation_euler[1] = pose.moving * .23 * np.sin(2 * np.pi * orbit + i)
-        c, s = np.cos(pose.heading), np.sin(pose.heading)
-        for x, y, phase, top, bottom, paw in legs:
-            stride, lift = trot_step(orbit + phase)
-            foot_x = x + stride * pose.moving
-            world_xy = np.array(pose.xy) + [c * foot_x - s * y, s * foot_x + c * y]
-            ground = float(sample_height(self.terrain, world_xy)) - origin_z
-            foot_z = .028 + lift * pose.moving + ground - bob
-            foot = (foot_x, y, foot_z)
-            knee = ((x + foot_x) * .5 + (-.062 if x > 0 else .047), y, (.299 + foot_z) * .49)
-            _apply_segment(top, (x, y * .79, .341), knee)
-            _apply_segment(bottom, knee, foot)
-            paw.location = foot
+            ear.rotation_euler[1] = pose.moving * .15 * np.sin(2 * phase + .35 * i)
+        for name, (top, bottom, paw) in legs.items():
+            leg = gait.legs[name]
+            _apply_segment(top, leg.hip, leg.knee)
+            _apply_segment(bottom, leg.knee, leg.ankle)
+            paw.location = leg.ankle
 
         pose = ball_pose(time)
         self.ball.location = (*pose.xy, float(sample_height(self.terrain, pose.xy)) + BALL_RADIUS)
@@ -425,8 +418,7 @@ class BackyardLife:
 def make_backyard_life(bpy, bundle):
     from .blender_scene import _foliage, material
 
-    if not layout_available(bundle):
-        return None, None
+    require_life_layout(bundle)
     seed = bundle.resolved_config.seed
     rng = np.random.default_rng([seed, 561])
     leaf = [material(bpy, f"Hedgehog shelter leaf {i}", color, .71, translucency=.24)

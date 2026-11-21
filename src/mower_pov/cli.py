@@ -31,6 +31,7 @@ def main(argv=None):
     render.add_argument("--gpu-index", type=int, default=0)
     render.add_argument("--undenoised", action="store_true")
     render.add_argument("--exr", action="store_true")
+    render.add_argument("--yard", choices=("legacy", "house"), default="legacy")
     render.add_argument("--view", choices=("onboard", "showcase"), default="onboard")
     encode = commands.add_parser("encode-preview")
     encode.add_argument("directories", nargs="+", type=Path)
@@ -70,7 +71,7 @@ def main(argv=None):
 
         request = RenderRequest(args.run_dir, parse_frames(args.frames), args.preset,
                                 args.output, args.blender, args.device, args.gpu_index,
-                                not args.undenoised, args.exr, args.view)
+                                not args.undenoised, args.exr, args.view, args.yard)
         result = render_frames(request)
         print(f"Rendered {len(result.produced_frames)}/{len(request.frame_indices)} frames in {result.output_dir}")
         if result.failed_frames:

@@ -53,3 +53,15 @@ def test_custom_bed_does_not_intersect_the_dog_lane(tmp_path):
         "world.flower_bed_xyxy_m": [2.5, 2.8, 3.1, 3.5], "grass.roots_per_m2": 15,
     })
     assert not layout_available(prepare_run(config, tmp_path))
+
+
+def test_scene_conflict_is_reported_not_hidden(tmp_path):
+    import pytest
+
+    from mower_pov.rendering.life_motion import require_life_layout
+
+    config = load_config("configs/smoke.toml", {
+        "world.flower_bed_xyxy_m": [2.5, 2.8, 3.1, 3.5], "grass.roots_per_m2": 15,
+    })
+    with pytest.raises(ValueError, match="dog.*flower bed"):
+        require_life_layout(prepare_run(config, tmp_path))

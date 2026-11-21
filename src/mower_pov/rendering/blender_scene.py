@@ -155,7 +155,7 @@ def _vehicle(bpy, scene, cfg):
     return chassis
 
 
-def _fence(bpy, bundle, rng):
+def _fence(bpy, bundle, rng, *, open_north):
     w = bundle.resolved_config.world
     wood = [material(bpy, f"Weathered cedar {i}", (
         .108 + i * .013, .074 + i * .010, .051 + i * .008),
@@ -163,31 +163,35 @@ def _fence(bpy, bundle, rng):
     # Slat geometry is joined into one draw mesh per panel orientation.
     vertices, faces, indices = [], [], []
 
-    def board(x, y, z, sx, sy, sz):
+    def board(x, y, z, sx, sy, sz, visible=True):
+        index = int(rng.integers(len(wood)))
+        if not visible:
+            return
         k = len(vertices)
         vertices.extend((x + a * sx / 2, y + b * sy / 2, z + c * sz / 2)
                         for c in (-1, 1) for b in (-1, 1) for a in (-1, 1))
         faces.extend(tuple(k + p for p in face) for face in (
             (0, 2, 3, 1), (4, 5, 7, 6), (0, 1, 5, 4),
             (2, 6, 7, 3), (0, 4, 6, 2), (1, 3, 7, 5)))
-        indices.extend([int(rng.integers(len(wood)))] * 6)
+        indices.extend([index] * 6)
 
     for sign in (-1, 1):
         x = sign * (w.width_m / 2 - .04)
         for y in np.arange(-w.depth_m / 2 + .055, w.depth_m / 2, .116):
             h = rng.uniform(1.61, 1.68)
             board(x, y, h / 2 + .017, .041, .114, h)
+        north_visible = sign != 1 or not open_north
         y = sign * (w.depth_m / 2 - .04)
         for x in np.arange(-w.width_m / 2 + .055, w.width_m / 2, .116):
             h = rng.uniform(1.61, 1.68)
-            board(x, y, h / 2 + .017, .114, .041, h)
+            board(x, y, h / 2 + .017, .114, .041, h, north_visible)
         for y in np.arange(-w.depth_m / 2 + .15, w.depth_m / 2, 1.7):
             board(sign * (w.width_m / 2 - .105), y, .85, .13, .11, 1.72)
         for x in np.arange(-w.width_m / 2 + .15, w.width_m / 2, 1.7):
-            board(x, sign * (w.depth_m / 2 - .105), .85, .11, .13, 1.72)
+            board(x, sign * (w.depth_m / 2 - .105), .85, .11, .13, 1.72, north_visible)
         for z in (.44, 1.15):
             board(sign * (w.width_m / 2 - .087), 0., z, .048, w.depth_m - .16, .085)
-            board(0., sign * (w.depth_m / 2 - .087), z, w.width_m - .16, .048, .085)
+            board(0., sign * (w.depth_m / 2 - .087), z, w.width_m - .16, .048, .085, north_visible)
     obj = mesh_object(bpy, "Weathered horizontal-railed timber fence", vertices, faces, wood[0])
     for mat in wood[1:]:
         obj.data.materials.append(mat)
@@ -289,9 +293,9 @@ def _flowers(bpy, rng, roots):
                           [stem, ivory, amber, violet, mauve], flex)
 
 
-def _garden(bpy, bundle):
+def _garden(bpy, bundle, *, open_north):
     rng = np.random.default_rng([bundle.resolved_config.seed, 64])
-    _fence(bpy, bundle, rng)
+    _fence(bpy, bundle, rng, open_north=open_north)
     w = bundle.resolved_config.world
     x0, y0, x1, y1 = bundle.terrain.obstacle_xyxy_m
     stone = [material(bpy, f"Weathered fieldstone {i}", color, surface_noise=(36, .33, .023))
@@ -353,7 +357,9 @@ def _garden(bpy, bundle):
 
     for x in np.linspace(-.55 * w.width_m, .55 * w.width_m, 9):
         for y in (-.64 * w.depth_m, .62 * w.depth_m):
-            distant_crown(x, y, rng.uniform(1.6, 2.55), (.94, .73, .69), 340, (.045, .119))
+            # Keep the north tree row behind the addition instead of through the facade.
+            row_y = w.depth_m * .5 + 5.2 if open_north and y > 0 else y
+            distant_crown(x, row_y, rng.uniform(1.6, 2.55), (.94, .73, .69), 340, (.045, .119))
     for y in np.linspace(-.47 * w.depth_m, .47 * w.depth_m, 8):
         for x in (-.63 * w.width_m, .65 * w.width_m):
             distant_crown(x, y, rng.uniform(1.9, 3.4), (1.08, 1.16, .90), 390, (.058, .142))
@@ -443,7 +449,7 @@ class SceneReplay:
             self.yard_life.apply(time)
 
 
-def build_scene(run_dir: str, preset: str) -> SceneReplay:
+def build_scene(run_dir: str, preset: str, *, yard="legacy", asset_digest=None) -> SceneReplay:
     import bpy
 
     bundle = load_bundle(Path(run_dir))
@@ -478,7 +484,11 @@ def build_scene(run_dir: str, preset: str) -> SceneReplay:
     _ground(bpy, bundle, soil)
     from .blender_life import make_backyard_life
 
-    foliage = _garden(bpy, bundle)
+    foliage = _garden(bpy, bundle, open_north=yard == "house")
+    if yard == "house":
+        from .blender_house import make_house
+
+        make_house(bpy, bundle, expected_digest=asset_digest)
     yard_life, shelter = make_backyard_life(bpy, bundle)
     if shelter is not None:
         foliage.insert(0, shelter)

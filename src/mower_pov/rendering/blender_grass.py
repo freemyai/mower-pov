@@ -5,6 +5,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from .blender_wind import breeze, leaf_tilt
+from .grass_geometry import clip_blades
+
+CUT_BIN_M = .001
 
 
 def grass_time_s(blender_frame, fps):
@@ -32,6 +35,9 @@ class GrassReplay:
     wheel_times: np.ndarray
     wheel_points: np.ndarray
     wheel_width: float
+    original_variants: np.ndarray
+    cut_variants: np.ndarray
+    prototypes: tuple
 
     def apply(self, absolute_s):
         h = blade_length(self.h0, self.first_cut, absolute_s, self.target)
@@ -56,8 +62,12 @@ class GrassReplay:
                 decay = np.repeat(np.maximum(0, 1 - (absolute_s - query) / .75), 2)
                 press[near] = (footprint * decay).max(axis=1)
 
-        spread = self.widths * (.67 + .33 * h / self.h0)
-        scale = np.column_stack((spread, spread, h * 10)).astype("f")
+        clipped = (self.cut_variants >= 0) & (absolute_s >= self.first_cut)
+        visible_height = np.where(clipped, self.h0, h)
+        spread = self.widths * (.67 + .33 * visible_height / self.h0)
+        scale = np.column_stack((spread, spread, visible_height * 10)).astype("f")
+        displayed = np.where(clipped, self.cut_variants, self.original_variants)
+        self.mesh.attributes["leaf_variant"].data.foreach_set("value", displayed)
         wind = leaf_tilt(breeze(absolute_s, x, y), self.yaw)
         angles = np.column_stack((
             wind[:, 0] + wind_angle(absolute_s, self.phase, spatial_phase) + .65 * press,
@@ -90,7 +100,7 @@ def _leaf_material(bpy, name, tip_tint):
     return mat
 
 
-def _prototype(bpy, scene, variant, seed):
+def _prototype(bpy, scene, variant, seed, cutoff=None):
     rng = np.random.default_rng([seed, 41, variant])
     vertices, faces, colors = [], [], []
     palette = [
@@ -128,7 +138,11 @@ def _prototype(bpy, scene, variant, seed):
                 for side in (0, 1):
                     k = start + j * 3 + side
                     faces.append((k - 3, k - 2, k + 1, k))
-    mesh = bpy.data.meshes.new(f"Leaf tuft {variant}")
+    name = f"Leaf tuft {variant}"
+    if cutoff is not None:
+        vertices, faces, colors = clip_blades(vertices, faces, colors, cutoff)
+        name += f" clipped at {cutoff:.3f} m"
+    mesh = bpy.data.meshes.new(name)
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
     for polygon in mesh.polygons:
@@ -151,7 +165,8 @@ def _instance_nodes(bpy, obj, prototypes):
     inputs = nodes.new("NodeGroupInput")
     outputs = nodes.new("NodeGroupOutput")
     instances = nodes.new("GeometryNodeGeometryToInstance")
-    for prototype in prototypes:
+    # Blender prepends new links on a multi-input socket.
+    for prototype in reversed(prototypes):
         info = nodes.new("GeometryNodeObjectInfo")
         info.inputs["Object"].default_value = prototype
         info.inputs["As Instance"].default_value = False
@@ -203,10 +218,21 @@ def make_grass(scene, bundle):
     mesh.update()
     obj = bpy.data.objects.new("Grass from the work-state cache", mesh)
     scene.collection.objects.link(obj)
-    _instance_nodes(bpy, obj, [_prototype(bpy, scene, i, bundle.resolved_config.seed) for i in range(10)])
+    seed = bundle.resolved_config.seed
+    prototypes = [_prototype(bpy, scene, i, seed) for i in range(10)]
+    cut_variants = np.full(len(xyz), -1, dtype="i")
+    ids = np.flatnonzero(near & np.isfinite(state.root_first_cut_s) & (roots.h0_m > state.cut_height_m))
+    # Quantize the clip plane in prototype space, keeping root scale unchanged.
+    bins = np.floor(state.cut_height_m / (10 * roots.h0_m[ids] * CUT_BIN_M)).astype("i")
+    groups, group_indices = np.unique(np.c_[variant[ids], bins], axis=0, return_inverse=True)
+    for shape, bin_index in groups:
+        prototypes.append(_prototype(bpy, scene, int(shape), seed, bin_index * CUT_BIN_M))
+    cut_variants[ids] = group_indices + 10
+    _instance_nodes(bpy, obj, prototypes)
     wheel_times = np.r_[state.wheel_contact_time_s[:, 0], state.wheel_contact_time_s[-1, 1]]
     wheel_points = np.concatenate((state.wheel_contact_xy_m[:, :, 0],
                                    state.wheel_contact_xy_m[-1:, :, 1]))
     return GrassReplay(mesh, xyz[:, :2], roots.h0_m, state.root_first_cut_s, state.cut_height_m,
                        .68 + roots.width_m * 105 + .15 * roots.bend,
-                       roots.azimuth_rad, roots.phase, wheel_times, wheel_points, state.wheel_width_m)
+                       roots.azimuth_rad, roots.phase, wheel_times, wheel_points, state.wheel_width_m,
+                       variant, cut_variants, tuple(prototypes))

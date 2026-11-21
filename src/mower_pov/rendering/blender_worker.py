@@ -63,7 +63,8 @@ def file_sha256(path):
 def main():
     settings = json.loads(Path(sys.argv[sys.argv.index("--") + 1]).read_text())
     started = time.perf_counter()
-    replay = build_scene(settings["run_dir"], settings["preset"])
+    replay = build_scene(settings["run_dir"], settings["preset"], yard=settings["yard"],
+                         asset_digest=settings["asset_digest"])
     scene = replay.scene
     showcase = None
     if settings["view"] == "showcase":
