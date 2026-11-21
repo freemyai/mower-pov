@@ -1,0 +1,8 @@
+extends = "backyard.toml"
+scenario = "mowing-course"
+
+[world]
+duration_s = 104.0
+
+[render]
+samples = 28

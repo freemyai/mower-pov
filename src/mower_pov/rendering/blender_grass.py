@@ -40,6 +40,21 @@ def _prop_pressure(xy, scenario):
         clearance = distance_to_segment(xy, start, end)
         np.maximum(press, .85 * np.clip(1 - clearance / .072, 0, 1), out=press)
     _press_at(xy, press, toy_center(scenario), .15, .64)
+    if scenario == "mowing-course":
+        from ..course_layout import COURSE_OBSTACLES
+
+        for prop in COURSE_OBSTACLES:
+            if len(prop.points) == 1:
+                _press_at(xy, press, prop.points[0], .8 * prop.radius_m, .92)
+                continue
+            points = np.asarray(prop.points)
+            pad = .105
+            local = np.flatnonzero(((xy >= points.min(axis=0) - pad)
+                                   & (xy <= points.max(axis=0) + pad)).all(axis=1))
+            nearest = np.full(len(local), np.inf)
+            for begin, end in zip(points[:-1], points[1:]):
+                np.minimum(nearest, distance_to_segment(xy[local], begin, end), out=nearest)
+            press[local] = np.maximum(press[local], np.clip((pad - nearest) / (pad - .019), 0, .99))
     return press
 
 
@@ -78,6 +93,7 @@ class GrassReplay:
     terrain: object
     actors: tuple | None
     prop_press: np.ndarray
+    reduce_prop_height: bool
 
     def apply(self, absolute_s):
         h = blade_length(self.h0, self.first_cut, absolute_s, self.target)
@@ -110,6 +126,8 @@ class GrassReplay:
         visible_height = np.where(clipped, self.h0, h)
         spread = self.widths * (.67 + .33 * visible_height / self.h0)
         scale = np.column_stack((spread, spread, visible_height * 10)).astype("f")
+        if self.reduce_prop_height:
+            scale[:, 2] *= 1 - .80 * self.prop_press
         displayed = np.where(clipped, self.cut_variants, self.original_variants)
         self.mesh.attributes["leaf_variant"].data.foreach_set("value", displayed)
         wind = leaf_tilt(breeze(absolute_s, x, y), self.yaw)
@@ -282,4 +300,5 @@ def make_grass(scene, bundle):
     return GrassReplay(mesh, xyz[:, :2], roots.h0_m, state.root_first_cut_s, state.cut_height_m,
                        .68 + roots.width_m * 105 + .15 * roots.bend,
                        roots.azimuth_rad, roots.phase, wheel_times, wheel_points, state.wheel_width_m,
-                       variant, cut_variants, tuple(prototypes), bundle.terrain, actors, props)
+                       variant, cut_variants, tuple(prototypes), bundle.terrain, actors, props,
+                       bundle.resolved_config.scenario == "mowing-course")

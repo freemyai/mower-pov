@@ -45,7 +45,7 @@ LEGACY_TRACKS = (DOG_TRACK, HEDGEHOG_TRACK, BALL_TRACK)
 
 
 def story_tracks(scenario):
-    if scenario == "toy-detour":
+    if scenario in {"toy-detour", "mowing-course"}:
         tracks = LEGACY_TRACKS
     else:
         dog = Track(8.2, 13.6, (2.15, 4.43), (2.15, 1.25))

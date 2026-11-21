@@ -97,3 +97,76 @@ scripts/render_dynamic_feature.sh feature "$run" "$blender" "$root/feature" "$re
 ```sh
 MOWER_BLENDER="$blender" .venv/bin/python -m pytest -q
 ```
+
+## 割草作业区成片
+
+从 `configs/mowing-course.toml` 准备缓存。主片直接使用缓存的总帧数、帧率、分辨率和
+Cycles 采样数。样片与主片读取同一底盘、割草、避障和声音时间线。
+
+```sh
+root="$PWD/runs/mowing-course"
+mkdir -p "$root"
+"$python" -m mower_pov prepare --config configs/mowing-course.toml \
+    --runs "$root/work" --diagnostics "$root/diagnostics" | tee "$root/prepare.log"
+run="$(awk '/^Bundle: / { print substr($0, 9) }' "$root/prepare.log")"
+reviews="$root/reviews"
+```
+
+先用短帧段测试渲染和媒体制作。CPU 冒烟测试使用 640×360。正式分辨率预检使用
+`--preset final`，可选择避障或转弯附近的帧，并在清单中比较单帧中位耗时和第 95 百分位耗时。
+
+```sh
+MOWER_DEVICE=CPU scripts/render_dynamic_feature.sh course-review work-area \
+    "$run" "$blender" "$reviews" 0:3 --preset smoke
+scripts/render_dynamic_feature.sh course-review work-area \
+    "$run" "$blender" "$reviews" 0:16 --preset final
+```
+
+从缓存的 `events.json` 和诊断轨迹选择三个连续的 4–12 秒时段。`work-area` 检查作业区和割草带，
+`avoidance` 检查识别障碍后的绕行与回接，`turning` 检查换行。用左闭右开绝对帧号替换
+下例的区间变量。逐段观看画面，并用实际观察填写验收记录。
+
+```sh
+scripts/render_dynamic_feature.sh course-review work-area "$run" "$blender" "$reviews" "$area_frames"
+scripts/render_dynamic_feature.sh course-review avoidance "$run" "$blender" "$reviews" "$avoidance_frames"
+scripts/render_dynamic_feature.sh course-review turning "$run" "$blender" "$reviews" "$turning_frames"
+scripts/render_dynamic_feature.sh accept avoidance "$reviews" --visual-method playback \
+    --visual-notes "$avoidance_visual_notes"
+```
+
+为三段都记录审查结果后即可生成主片。作业区样片和主片使用 FFmpeg 完整解码，再由
+FFplay 通过 Xvfb 软件窗口原速播放。机器报告记录播放器时钟、音画时差和丢帧计数，
+并比较 AAC 解码后的 PCM 和源 WAV 的绝对采样窗口。虚拟音频设备用于自动验证。人工试听后
+可在样片验收命令中补充 `--audio-notes`。
+
+```sh
+scripts/render_dynamic_feature.sh course "$run" "$blender" "$root/feature" "$reviews"
+```
+
+长任务可在独立终端中运行。后台任务把日志和退出码保留在作业目录，便于稍后检查。
+
+```sh
+export MOWER_COURSE_STATUS="$root/feature.exit"
+printf 'running\n' > "$MOWER_COURSE_STATUS"
+setsid -f bash -c '"$@"; result=$?; printf "%s\n" "$result" > "$MOWER_COURSE_STATUS"' \
+    _ env MOWER_GPU_INDICES=0,1,2,3 scripts/render_dynamic_feature.sh course \
+    "$run" "$blender" "$root/feature" "$reviews" \
+    >> "$root/feature.log" 2>&1 < /dev/null
+```
+
+如果后台任务中断，原样重跑主片命令即可补齐缺失或校验失败的帧。保持缓存、渲染源码、Blender 构建、快门和 GPU
+列表一致。同一输出目录由生产锁保护。任务完成后，`feature/mower-pov-mowing-course.mp4` 与
+`feature/manifest.json` 记录成片及可核对的媒体和渲染证据。
+
+五条名义作业行以 25 厘米间距往返。局部规划用场景静态占用几何标记不可直行的段，
+比较两侧候选的连续底盘净距、行程、转弯耗时和重复作业距离。轨迹在接近障碍时限速，
+绕开安全余量后回接同一行。换行用限角速度、限角加速度的圆弧完成。回放记录的是同一作业
+时间线上的刀盘、轮迹、短草和相机。近障压过的草叶只改变显示姿态。
+
+本场景使用预先知道的静态占用与仿真运动模型，`REPLAN` 标记名义路线的绕行段开始。
+覆盖率分母是五条名义直行的完整刀盘扫掠，包含因障碍及净距预留而保留的草。
+相机视锥候选显示旧草高度在乱序重放中是否保持，最终画面仍要核对视线遮挡。
+
+```sh
+.venv/bin/python scripts/measure_course.py "$run" "$root/evidence"
+```

@@ -396,7 +396,7 @@ def _garden(bpy, bundle, *, open_north):
     return motion
 
 
-def _light(bpy, scene):
+def _light(bpy, scene, *, mowing_course=False):
     from mathutils import Vector
 
     world = bpy.data.worlds.new("Outdoor skylight")
@@ -405,10 +405,11 @@ def _light(bpy, scene):
     sky = nodes.new("ShaderNodeTexSky")
     sky.sky_type = "MULTIPLE_SCATTERING"
     sky.sun_disc = False
-    sky.sun_elevation = .55
-    sky.sun_rotation = 2.50
+    sun_direction = (.62, -.35, -.69) if mowing_course else (.34, -.67, -.69)
+    sky.sun_elevation = np.arctan2(-sun_direction[2], np.hypot(*sun_direction[:2])) if mowing_course else .55
+    sky.sun_rotation = np.arctan2(-sun_direction[1], -sun_direction[0]) if mowing_course else 2.50
     background = nodes.get("Background")
-    background.inputs["Strength"].default_value = .22
+    background.inputs["Strength"].default_value = .30 if mowing_course else .22
     links.new(sky.outputs["Color"], background.inputs["Color"])
     scene.world = world
     sun_data = bpy.data.lights.new("Late-afternoon sun", "SUN")
@@ -416,7 +417,7 @@ def _light(bpy, scene):
     sun_data.angle = np.deg2rad(2.6)
     sun_data.color = (1., .864, .684)
     sun = bpy.data.objects.new(sun_data.name, sun_data)
-    sun.rotation_euler = Vector((.34, -.67, -.69)).to_track_quat("-Z", "Y").to_euler()
+    sun.rotation_euler = Vector(sun_direction).to_track_quat("-Z", "Y").to_euler()
     scene.collection.objects.link(sun)
 
 
@@ -478,7 +479,7 @@ def build_scene(run_dir: str, preset: str, *, yard="legacy", asset_digest=None) 
     scene.view_layers[0].cycles.denoising_store_passes = True
     scene.view_settings.view_transform = "AgX"
     scene.view_settings.exposure = .14
-    _light(bpy, scene)
+    _light(bpy, scene, mowing_course=cfg.scenario == "mowing-course")
     soil = material(bpy, "Patchy loam and basal grass", (.080, .104, .035),
                     surface_noise=(11, .23, .029))
     _ground(bpy, bundle, soil)
@@ -489,6 +490,10 @@ def build_scene(run_dir: str, preset: str, *, yard="legacy", asset_digest=None) 
         from .blender_house import make_house
 
         make_house(bpy, bundle, expected_digest=asset_digest)
+    if cfg.scenario == "mowing-course":
+        from .blender_course import make_course_props
+
+        make_course_props(bpy, bundle)
     yard_life, shelter = make_backyard_life(bpy, bundle)
     if shelter is not None:
         foliage.insert(0, shelter)

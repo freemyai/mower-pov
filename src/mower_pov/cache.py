@@ -115,8 +115,16 @@ def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
     config = config_from_dict(asdict(config))
     terrain = build_terrain(config)
     story = None
+    course_identity = None
     if config.scenario == "legacy":
         trajectory = integrate_motion(config, terrain, make_demo_schedule(config, terrain))
+    elif config.scenario == "mowing-course":
+        from .course import run_course
+        from .course_layout import course_layout_identity
+
+        trajectory, story, plan = run_course(config, terrain)
+        course_identity = course_layout_identity()
+        course_identity["scheduled_rows"] = plan.report()
     else:
         from .controller import run_controller
 
@@ -148,6 +156,8 @@ def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
     }
     if assets:
         identity["assets"] = assets
+    if course_identity is not None:
+        identity["course_layout"] = course_identity
     run_id = compute_run_id(identity)
     manifest = {"schema_version": SCHEMA_VERSION, "run_id": run_id, "identity": identity,
                 "git_commit": _git_commit(), "environment": build, "assets": assets}
@@ -232,6 +242,13 @@ def load_bundle(run_dir: Path) -> RunBundle:
     normalized = asdict(config)
     if schema == 1:
         normalized.pop("scenario")
+    if config.scenario == "mowing-course":
+        from .course_layout import course_layout_identity
+
+        course = identity.get("course_layout")
+        if not isinstance(course, dict) or any(course.get(key) != value
+                for key, value in course_layout_identity().items()):
+            raise ValueError("bundle obstacle geometry differs from the installed mowing course")
     if (_json(normalized) != _json(identity["config"])
             or _hash_bytes(event_text.encode()) != identity["events_sha256"]
             or (config.scenario == "legacy") != (STORY_FILE not in arrays)

@@ -17,3 +17,6 @@ physical repeats, and SHA-256 checksums. [Poly Haven license](https://polyhaven.
 
 The dynamic short-haired dog is generated from original source included under the project
 license. Its provenance and rig measurements are recorded in the [asset notes](docs/dog-rig.zh-CN.md).
+
+The coiled hose, watering can, and panel ball in the multi-row course use original geometry
+and procedural materials created by the project. The course reuses the two CC0 house materials above.

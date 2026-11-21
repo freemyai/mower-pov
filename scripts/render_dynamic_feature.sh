@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Front door for the onboard review and full-film production workflow.
+# Run the onboard review, course preflight, and full-film production commands.
 set -euo pipefail
 
 repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"

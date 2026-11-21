@@ -1,4 +1,4 @@
-"""Produce and verify local onboard clips from the cached dynamic backyard timeline."""
+"""Produce and verify local onboard films and reviews from cached work timelines."""
 
 import argparse
 import fcntl
@@ -11,6 +11,7 @@ import statistics
 import subprocess
 import sys
 import time
+import wave
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -29,7 +30,9 @@ FPS = 30
 FEATURE_FRAMES = 1200
 FEATURE_SIZE = (1920, 1080)
 REVIEW_DURATIONS = {"yard": (8, 10), "dog": (8, 12), "hedgehog": (6, 10)}
+COURSE_REVIEW_DURATIONS = {"work-area": (4, 12), "avoidance": (4, 12), "turning": (4, 12)}
 REVIEW_PRESETS = ("preview", "beauty")
+COURSE_SCENARIO = "mowing-course"
 
 
 def absolute_range(value):
@@ -109,7 +112,7 @@ def render_batches(bundle, blender, output, frame_range, preset):
     return batches
 
 
-def contact_sheet(batches, frame_range, output):
+def contact_sheet(batches, frame_range, output, fps):
     first, stop = frame_range
     sample_count = min(12, stop - first)
     indices = np.linspace(first, stop - 1, sample_count, dtype=int)
@@ -123,23 +126,23 @@ def contact_sheet(batches, frame_range, output):
         x, y = gap + i % cols * dx, gap + i // cols * dy
         with Image.open(path) as image:
             sheet.paste(image.convert("RGB").resize((width, height), Image.Resampling.LANCZOS), (x, y))
-        draw.text((x + 3, y + height + 4), f"{frame / FPS:05.2f}s  |  frame {frame:04}",
+        draw.text((x + 3, y + height + 4), f"{frame / fps:05.2f}s  |  frame {frame:04}",
                   fill="#eeeae3")
     sheet.save(output / "contact.jpg", quality=94)
 
 
-def build_media(output, batches, frame_range, dimensions, filename, pace):
+def build_media(output, batches, frame_range, dimensions, filename, pace, fps):
     first, stop = frame_range
-    duration = (stop - first) / FPS
+    duration = (stop - first) / fps
     video = output / f"{filename}.mp4"
     with TemporaryDirectory(prefix=".encode-", dir=output) as directory:
         silent = Path(directory) / "silent.mp4"
-        report = encode_preview(batches, tuple(range(first, stop)), FPS, silent)
+        report = encode_preview(batches, tuple(range(first, stop)), fps, silent)
         if (report["width"], report["height"]) != dimensions:
             raise ValueError("encoded dimensions differ from the requested render settings")
         if abs(report["duration_s"] - duration) > .001:
             raise ValueError("encoded video duration differs from the absolute frame window")
-        report.update(mux_audio(silent, output / "timeline.wav", first, stop, FPS, video))
+        report.update(mux_audio(silent, output / "timeline.wav", first, stop, fps, video))
 
     # Pace decoded frames by presentation timestamp; input pacing can finish ahead of buffered frames.
     video_filters = "blackdetect=d=0.15:pix_th=0.05,freezedetect=n=0.0005:d=0.45"
@@ -161,7 +164,7 @@ def build_media(output, batches, frame_range, dimensions, filename, pace):
     if not peaks or max(peaks) >= -.05:
         raise ValueError("AAC full decode did not verify audio headroom")
 
-    contact_sheet(batches, frame_range, output)
+    contact_sheet(batches, frame_range, output, fps)
     report.update(
         filename=video.name, sha256=file_digest(video), absolute_end_frame_exclusive=stop,
         machine_checks={"full_av_decode": True, "dimensions_and_timing": True, "audio_headroom": True},
@@ -172,20 +175,93 @@ def build_media(output, batches, frame_range, dimensions, filename, pace):
     return report
 
 
+def audit_audio_alignment(output, report):
+    first, stop = report["audio_start_sample"], report["audio_end_sample"]
+    length = stop - first
+    with wave.open(str(output / "timeline.wav"), "rb") as wav:
+        if wav.getsampwidth() != 2:
+            raise ValueError("audio alignment requires a signed 16-bit timeline WAV")
+        wav.setpos(first)
+        source = np.frombuffer(wav.readframes(length), dtype="<i2").reshape(-1, 2)
+    pcm = subprocess.check_output([
+        "ffmpeg", "-nostdin", "-v", "error", "-xerror", "-i", str(output / report["filename"]),
+        "-map", "0:a:0", "-f", "s16le", "-c:a", "pcm_s16le", "-",
+    ])
+    decoded = np.frombuffer(pcm, dtype="<i2").reshape(-1, 2)
+    max_lag, edge = 64, 4096
+    if len(decoded) < length or len(decoded) - length > 1024 or length < 2 * edge + 1024:
+        raise ValueError("decoded PCM length differs from the absolute WAV sample window")
+    stride = max(8, (length + 119_999) // 120_000)
+    indices = np.arange(edge, length - edge, stride)
+    actual = decoded[indices].astype(np.float64)
+    actual -= actual.mean(axis=0)
+    actual_energy = np.einsum("ij,ij->", actual, actual)
+    if not actual_energy:
+        raise ValueError("decoded AAC contains no signal for the audio alignment check")
+    scores = []
+    for lag in range(-max_lag, max_lag + 1):
+        expected = source[indices + lag].astype(np.float64)
+        expected -= expected.mean(axis=0)
+        energy = np.einsum("ij,ij->", expected, expected)
+        scores.append(np.einsum("ij,ij->", expected, actual) / np.sqrt(energy * actual_energy) if energy else 0.)
+    best = int(np.argmax(scores))
+    lag, correlation = best - max_lag, float(scores[best])
+    if abs(lag) > 2 or correlation < .90:
+        raise ValueError(f"decoded AAC alignment differs from the source WAV (lag={lag}, r={correlation:.4f})")
+    return {
+        "video_sha256": report["sha256"], "source_wav_first_sample": first,
+        "source_wav_end_sample_exclusive": stop, "decoded_pcm_samples_including_codec_padding": len(decoded),
+        "best_source_lag_samples": lag, "normalized_pcm_correlation": correlation,
+        "cross_correlation_lag_range_samples": [-max_lag, max_lag], "comparison_stride_samples": stride,
+        "excluded_edge_samples": edge, "subjective_audition_status": "pending",
+    }
+
+
+def audit_player(output, report):
+    width, height, duration = report["width"], report["height"], report["duration_s"]
+    command = [
+        "xvfb-run", "-a", "-s", f"-screen 0 {width}x{height}x24", "ffplay", "-autoexit", "-stats",
+        "-sync", "audio", "-noframedrop", "-x", str(width), "-y", str(height), str(output / report["filename"]),
+    ]
+    environment = {**os.environ, "SDL_VIDEODRIVER": "x11", "SDL_RENDER_DRIVER": "software", "SDL_AUDIODRIVER": "dummy"}
+    log_path = output / "ffplay.log"
+    started = time.monotonic()
+    with log_path.open("w", encoding="utf8") as log:
+        subprocess.run(command, env=environment, timeout=2 * duration + 15, check=True,
+                       stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
+    elapsed = time.monotonic() - started
+    status = re.findall(r"^ *([+-]?\d+\.\d+) A-V:\s*([+-]?\d+\.\d+) fd=\s*(\d+)",
+                        log_path.read_text(encoding="utf8"), re.MULTILINE)
+    samples = [(float(clock), float(skew), int(drops)) for clock, skew, drops in status]
+    steady = [abs(skew) for clock, skew, _ in samples if clock >= .25]
+    if (not steady or samples[-1][0] < duration - .25 or elapsed < duration - .35
+            or max(steady) > .125 or any(drops for _, _, drops in samples)):
+        raise ValueError(f"ffplay did not verify full-rate synchronized playback; see {log_path}")
+    return {
+        "video": report["filename"], "video_sha256": report["sha256"], "exit_code": 0,
+        "expected_duration_s": duration, "wall_duration_s": elapsed, "final_player_clock_s": samples[-1][0],
+        "sampled_status_lines": len(samples), "final_av_skew_s": samples[-1][1],
+        "median_abs_av_skew_s_after_250ms": statistics.median(steady), "max_abs_av_skew_s_after_250ms": max(steady),
+        "dropped_frames": 0, "audio_output": "SDL dummy device", "video_output": "SDL software display via Xvfb",
+        "display_playback_pass": True, "command": command,
+    }
+
+
 def write_state(output, bundle, frame_range):
-    from mower_pov.actors.behavior import actor_pose
+    from mower_pov.actors.behavior import ACTOR_NAMES, actor_pose
 
     trajectory, story = bundle.trajectory, bundle.story
+    cfg = bundle.resolved_config
     fields = ("mode", "blocked", "blade_command", "rotor_fraction", "clearance_m", "obstacle_name")
     with (output / "state.jsonl").open("w", encoding="utf8") as file:
         for frame in range(*frame_range):
-            absolute_s = frame / FPS
+            absolute_s = frame / cfg.render.fps
             i = np.searchsorted(trajectory.time_s, absolute_s + 1e-10, side="right") - 1
             controller = {name: getattr(story, name)[i].item() for name in fields}
             if not np.isfinite(controller["clearance_m"]):
                 controller["clearance_m"] = None
             actors = {}
-            for name in ("dog", "hedgehog", "ball"):
+            for name in ACTOR_NAMES:
                 pose = actor_pose(bundle, name, absolute_s)
                 actors[name] = {"xy_m": list(map(float, pose.xy)), "heading_rad": float(pose.heading),
                                 "distance_m": float(pose.distance), "movement_weight": float(pose.moving)}
@@ -195,20 +271,25 @@ def write_state(output, bundle, frame_range):
                           "wheel_speeds_mps": trajectory.wheel_speeds[i].tolist()},
                 "controller": controller, "actors": actors,
             }
+            if cfg.scenario == COURSE_SCENARIO:
+                row["mower"].update(yaw_rad=float(trajectory.unwrapped_yaw[i]),
+                                    yaw_rate_radps=float(trajectory.omega_radps[i]),
+                                    blade_enabled=bool(trajectory.blade_enabled[i]))
             file.write(json.dumps(row, allow_nan=False) + "\n")
     event_path = bundle.run_dir / "events.json"
     shutil.copyfile(event_path, output / "timeline-events.json")
 
 
-def approved_reviews(directory, run_id):
+def approved_reviews(directory, run_id, review_mode="review"):
     source = _code_identity()
     reports = {}
-    for name in REVIEW_DURATIONS:
+    names = COURSE_REVIEW_DURATIONS if review_mode == "course-review" else REVIEW_DURATIONS
+    for name in names:
         folder = directory / name
         proof = read_json(folder / "acceptance.json")
         current = read_json(folder / "manifest.json")
         if (proof["name"] != name or proof["visual_review"]["status"] != "accepted"
-                or current["mode"] != "review" or current["preset"] not in REVIEW_PRESETS or current["name"] != name
+                or current["mode"] != review_mode or current["preset"] not in REVIEW_PRESETS or current["name"] != name
                 or proof["media_sha256"] != current["media"]["sha256"]
                 or proof["manifest_sha256"] != file_digest(folder / "manifest.json")
                 or proof["media_sha256"] != file_digest(folder / f"{name}.mp4")
@@ -222,11 +303,12 @@ def approved_reviews(directory, run_id):
 def accept_review(args):
     output = args.output / args.name
     manifest_path = output / "manifest.json"
+    mode = "course-review" if args.name in COURSE_REVIEW_DURATIONS else "review"
     with (output / ".production.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         manifest = read_json(manifest_path)
         media = manifest["media"]
-        if (manifest["mode"] != "review" or manifest["name"] != args.name or manifest["preset"] not in REVIEW_PRESETS
+        if (manifest["mode"] != mode or manifest["name"] != args.name or manifest["preset"] not in REVIEW_PRESETS
                 or not all(media["machine_checks"].values())
                 or file_digest(output / media["filename"]) != media["sha256"]):
             raise ValueError(f"{args.name} has no verified review clip to accept")
@@ -244,37 +326,56 @@ def accept_review(args):
 def run_production(args):
     bundle = load_bundle(args.bundle.resolve())
     cfg = bundle.resolved_config
-    if bundle.story is None or (cfg.render.fps, cfg.frame_count) != (FPS, FEATURE_FRAMES):
+    is_course = args.mode in {"course", "course-review"}
+    fps = cfg.render.fps
+    if is_course:
+        if bundle.story is None or cfg.scenario != COURSE_SCENARIO or cfg.frame_count <= 60 * fps:
+            raise ValueError("expected a mowing-course work bundle with more than 60 seconds of frames")
+    elif bundle.story is None or (fps, cfg.frame_count) != (FPS, FEATURE_FRAMES):
         raise ValueError("expected a 40-second, 30 fps dynamic backyard work bundle")
 
     reviews = None
-    if args.mode == "feature":
-        preset, name = "final", "mower-pov-dynamic-40s"
-        frame_range, dimensions = (0, FEATURE_FRAMES), FEATURE_SIZE
-        if (cfg.render.width, cfg.render.height) != FEATURE_SIZE:
+    if args.mode in {"feature", "course"}:
+        preset = "final"
+        name = "mower-pov-mowing-course" if is_course else "mower-pov-dynamic-40s"
+        frame_range, dimensions = (0, cfg.frame_count), (cfg.render.width, cfg.render.height)
+        if not is_course and dimensions != FEATURE_SIZE:
             raise ValueError("the full feature requires a 1920x1080 render bundle")
-        reviews = approved_reviews(args.reviews, bundle.run_id)
+        review_mode = "course-review" if is_course else "review"
+        reviews = approved_reviews(args.reviews, bundle.run_id, review_mode)
         output = args.output
     else:
         preset, name, frame_range = args.preset, args.name, args.frames
-        dimensions = PRESETS[preset][:2]
-        low, high = REVIEW_DURATIONS[name]
+        dimensions = ((cfg.render.width, cfg.render.height) if preset == "final" else PRESETS[preset][:2])
+        durations = COURSE_REVIEW_DURATIONS if is_course else REVIEW_DURATIONS
+        low, high = durations[name]
         frame_count = frame_range[1] - frame_range[0]
-        if frame_range[1] > FEATURE_FRAMES or (preset in REVIEW_PRESETS and not low * FPS <= frame_count <= high * FPS):
+        if frame_range[1] > cfg.frame_count:
+            raise ValueError(f"{name} range exceeds the {cfg.frame_count}-frame timeline")
+        if preset in REVIEW_PRESETS and not low * fps <= frame_count <= high * fps:
             raise ValueError(f"{name} requires a {low}–{high}-second window within the full timeline")
-        # Smoke output can live beside its corresponding review.
-        output = args.output / (name if preset in REVIEW_PRESETS else f"{name}-smoke")
+        # Short preflight runs can live beside the corresponding review.
+        suffix = {"smoke": "-smoke", "final": "-preflight"}.get(preset, "")
+        output = args.output / (name + suffix)
+
+    playback = preset in REVIEW_PRESETS or args.mode in {"feature", "course"}
+    if is_course and playback:
+        missing = [name for name in ("ffplay", "xvfb-run", "Xvfb", "xauth") if not shutil.which(name)]
+        if missing:
+            raise ValueError(f"course playback requires tools missing from PATH: {', '.join(missing)}")
 
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     with (output / ".production.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
+        started = time.monotonic()
         batches = render_batches(bundle, args.blender, output, frame_range, preset)
+        render_wall = time.monotonic() - started
         frames = tuple(range(*frame_range))
         verify_sequence(batches, frames, dimensions, linear=False)
         subprocess.run([sys.executable, "-m", "mower_pov", "audio", str(bundle.run_dir),
                         "--output", str(output / "timeline.wav")], check=True)
-        report = build_media(output, batches, frame_range, dimensions, name, preset != "smoke")
+        report = build_media(output, batches, frame_range, dimensions, name, playback and not is_course, fps)
         write_state(output, bundle, frame_range)
 
         requests = [read_json(batch / "request.json") for batch in batches]
@@ -288,6 +389,19 @@ def run_production(args):
             "contact_sheet": "contact.jpg", "state_log": "state.jsonl", "decode_log": "decode.log",
             "events": "timeline-events.json", "audio": "timeline.wav",
         }
+        render_metrics = {}
+        if is_course:
+            render_metrics = {
+                "render_stage_wall_s": render_wall,
+                "render_workers": len(batches),
+                "timed_frames": len(timings),
+                "p95_seconds_per_frame": float(np.percentile(list(timings.values()), 95)),
+            }
+            if playback:
+                write_json(output / "ffplay-audit.json", audit_player(output, report))
+                write_json(output / "audio-alignment.json", audit_audio_alignment(output, report))
+                evidence.update(player="ffplay-audit.json", player_log="ffplay.log", audio_alignment="audio-alignment.json")
+                report["machine_checks"].update(display_playback=True, pcm_alignment=True)
         write_json(output / "manifest.json", {
             "mode": args.mode, "name": name, "preset": preset, "media": report,
             "review_acceptance": reviews,
@@ -299,6 +413,7 @@ def run_production(args):
                            cfg.render.samples if preset == "final" else PRESETS[preset][2]),
                        "shutter_ms": identity["shutter_ms"], "shutter_samples": identity["shutter_samples"],
                        "verified_pngs": len(frames), "median_seconds_per_frame": statistics.median(timings.values()),
+                       **render_metrics,
                        "requests": {batch.name: request for batch, request in zip(batches, requests)}},
             "evidence": {key: {"filename": name, "sha256": file_digest(output / name)}
                          for key, name in evidence.items()},
@@ -309,26 +424,34 @@ def run_production(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="mode", required=True)
-    review = commands.add_parser("review", help="render one absolute onboard review window")
-    review.add_argument("name", choices=REVIEW_DURATIONS)
-    review.add_argument("bundle", type=Path)
-    review.add_argument("blender", type=Path)
-    review.add_argument("output", type=Path)
-    review.add_argument("frames", type=absolute_range)
-    review.add_argument("--preset", choices=(*REVIEW_PRESETS, "smoke"), default="preview")
+    for mode, roles, presets in (
+        ("review", REVIEW_DURATIONS, (*REVIEW_PRESETS, "smoke")),
+        ("course-review", COURSE_REVIEW_DURATIONS, (*REVIEW_PRESETS, "smoke", "final")),
+    ):
+        review = commands.add_parser(mode, help="render one absolute onboard review window")
+        review.add_argument("name", choices=roles)
+        review.add_argument("bundle", type=Path)
+        review.add_argument("blender", type=Path)
+        review.add_argument("output", type=Path)
+        review.add_argument("frames", type=absolute_range)
+        review.add_argument("--preset", choices=presets, default="preview")
 
     accept = commands.add_parser("accept", help="record an assessment tied to the verified review video")
-    accept.add_argument("name", choices=REVIEW_DURATIONS)
+    accept.add_argument("name", choices=(*REVIEW_DURATIONS, *COURSE_REVIEW_DURATIONS))
     accept.add_argument("output", type=Path)
     accept.add_argument("--visual-method", choices=("contact-sheet", "playback"), required=True)
     accept.add_argument("--visual-notes", required=True)
     accept.add_argument("--audio-notes")
 
-    feature = commands.add_parser("feature", help="render the full 40-second feature after review acceptance")
-    feature.add_argument("bundle", type=Path)
-    feature.add_argument("blender", type=Path)
-    feature.add_argument("output", type=Path)
-    feature.add_argument("reviews", type=Path)
+    for mode, help_text in (
+        ("feature", "render the full 40-second feature after review acceptance"),
+        ("course", "render the full mowing course after review acceptance"),
+    ):
+        feature = commands.add_parser(mode, help=help_text)
+        feature.add_argument("bundle", type=Path)
+        feature.add_argument("blender", type=Path)
+        feature.add_argument("output", type=Path)
+        feature.add_argument("reviews", type=Path)
 
     args = parser.parse_args()
     try:
