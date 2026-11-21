@@ -108,6 +108,17 @@ def make_house(bpy, bundle, expected_digest=None):
         for z in (.49, 1.18):
             box(bpy, "Privacy screen bearer", (x, (edge_y + front_y + .38) / 2, z),
                 (.078, front_y - edge_y + .38, .067), wood)
+    for x0, x1 in ((-half_width + .025, left + .015), (right - .015, half_width - .025)):
+        if x1 <= x0:
+            continue
+        count = int(np.ceil((x1 - x0) / .13))
+        width = (x1 - x0) / count
+        for center in x0 + (np.arange(count) + .5) * width:
+            box(bpy, "Privacy return slat", (center, front_y + .03, .86),
+                (width - .002, .038, 1.72), wood)
+        for z in (.49, 1.18):
+            box(bpy, "Privacy return bearer", ((x0 + x1) / 2, front_y + .065, z),
+                (x1 - x0, .076, .067), wood)
 
     # Openings are modeled as actual gaps between masonry panels.
     openings = ((-3.52, -1.82, .95, 2.12, "Window"),
