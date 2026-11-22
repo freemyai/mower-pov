@@ -119,12 +119,13 @@ def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
     if config.scenario == "legacy":
         trajectory = integrate_motion(config, terrain, make_demo_schedule(config, terrain))
     elif config.scenario == "mowing-course":
-        from .course import run_course
+        from .course import coast_over_cut_grass, run_course
         from .course_layout import course_layout_identity
 
         trajectory, story, plan = run_course(config, terrain)
         course_identity = course_layout_identity()
         course_identity["scheduled_rows"] = plan.report()
+        course_identity["coverage_plan"] = plan.coverage_report
     else:
         from .controller import run_controller
 
@@ -135,6 +136,9 @@ def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
         raise ValueError(f"invalid demo at {first.time_s:.3f}s: {first.reason}")
     roots = generate_blade_roots(config, terrain)
     state = compute_cut_state(config, terrain, trajectory, roots)
+    if course_identity is not None:
+        trajectory, story, state, idle = coast_over_cut_grass(config, terrain, trajectory, story, roots, state)
+        course_identity["coverage_plan"]["blade_idle_intervals"] = idle
     events = build_events(config, trajectory, state, roots, story=story)
     data = _datasets(terrain, trajectory, roots, state, story)
     assets = []

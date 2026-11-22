@@ -170,3 +170,23 @@ setsid -f bash -c '"$@"; result=$?; printf "%s\n" "$result" > "$MOWER_COURSE_STA
 ```sh
 .venv/bin/python scripts/measure_course.py "$run" "$root/evidence"
 ```
+
+## 比较覆盖效率
+
+覆盖规划将相邻行、绕行与掉头的刀盘扫掠投到同一网格。先保留连续底盘净距
+符合要求的候选，再联合选择五条作业行，最后成对重试行的组合。目标区的新草
+具有更高权重。重访面积、额外扫过的次数、行程和耗时都会影响选择。启动、掉头和停刀
+时间纳入同一时间预算。控制仍然使用已知的场景占用。
+
+首割缓存沿用实际 1 厘米网格和独立草根。遇到足够长且没有任何新草被割到的
+路段，可以在移动中让刀盘停转。只有从新命令重算的网格和草根首次割到时间
+完全一致时，才保留该方案。刀盘状态由同一缓存供渲染和声音使用。
+
+```sh
+baseline=$(cat runs/mowing-course/work-bundle.txt)
+.venv/bin/python scripts/compare_coverage.py "$baseline" "$run" "$root/comparison"
+```
+
+对比时应沿用同一组障碍和目标。一次连续进入刀盘范围计一次覆盖。
+离开后带刀再次进入才计入重复。已经定义的五条名义作业行构成目标分母，
+其中包含障碍安全余量内的区域。比较图中保留仍未割到的位置。

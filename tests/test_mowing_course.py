@@ -87,3 +87,13 @@ def test_rejects_unreachable_time_budget(work):
     config = replace(work.resolved_config, world=world)
     with pytest.raises(ValueError, match="needs .* seconds"):
         plan_course(config)
+
+
+def test_coverage_adjustment_gains_area_under_the_same_time_budget(work):
+    from mower_pov.course_coverage import nominal_cut_fraction
+
+    layout = work.manifest["identity"]["course_layout"]
+    assert layout["coverage_plan"]["objective"] == "marginal-swept-area"
+    assert work.resolved_config.world.duration_s == 104.
+    assert nominal_cut_fraction(work) > .77
+    assert min(work.story.clearance_m) >= .035
