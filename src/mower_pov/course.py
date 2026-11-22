@@ -14,7 +14,7 @@ from .cutting import compute_cut_state
 from .course_layout import (BODY_DESIGN_CLEARANCE_M, COURSE_OBSTACLES,
                             COURSE_ROW_Y, COURSE_X_LIMITS, obstacle_clearance,
                             obstacle_swept_clearance)
-from .motion import trajectory_from_path
+from .motion import segments_hit_box, trajectory_from_path
 from .obstacles import FENCE_ENDPOINTS, FENCE_Y, distance_to_segment, validate_story_layout
 
 
@@ -160,8 +160,21 @@ def _row_shapes(x, lane_y, nominal, collision_columns):
 
 def _candidate_clearance(xy, yaw, config, bounds, design_clearance):
     corner = .5 * np.hypot(config.mower.length_m, config.mower.width_m)
-    step = .5 * (np.linalg.norm(np.diff(xy, axis=0), axis=1) + corner * abs(np.diff(yaw)))
+    chords = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+    step = .5 * (chords + corner * abs(np.diff(yaw)))
     pad = np.maximum(np.r_[step, 0.], np.r_[0., step])
+    # Include the configured garden boundary and flower bed before scoring. A
+    # bad candidate must not win the search and fail only at final validation.
+    margin = corner + .025 + .5 * chords.max()
+    lower, upper = xy.min(axis=0), xy.max(axis=0)
+    edge = np.array([config.world.width_m, config.world.depth_m]) * .5 - margin
+    if np.any(lower <= -edge) or np.any(upper >= edge):
+        return None
+    bed = np.asarray(config.world.flower_bed_xyxy_m)
+    bed_min, bed_max = bed[:2] - margin, bed[2:] + margin
+    overlaps_bounds = np.all((upper >= bed_min) & (lower <= bed_max))
+    if overlaps_bounds and segments_hit_box(xy[:-1], xy[1:], bed_min, bed_max).any():
+        return None
     # The play rail belongs to the surrounding yard rather than the course props.
     a, b = FENCE_ENDPOINTS
     rail = distance_to_segment(xy, (a, FENCE_Y), (b, FENCE_Y))

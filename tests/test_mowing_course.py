@@ -97,3 +97,16 @@ def test_coverage_adjustment_gains_area_under_the_same_time_budget(work):
     assert work.resolved_config.world.duration_s == 104.
     assert nominal_cut_fraction(work) > .77
     assert min(work.story.clearance_m) >= .035
+
+
+def test_flowerbed_is_filtered_during_candidate_selection():
+    from mower_pov.course import _candidate_clearance
+
+    cfg = load_config("configs/mowing-course.toml",
+                      {"world.flower_bed_xyxy_m": (-.115, -.035, -.105, -.025)})
+    x = np.linspace(-.3, .1, 201)
+    passes_too_close = np.column_stack((x, np.full_like(x, .31)))
+    has_room = np.column_stack((x, np.full_like(x, .52)))
+    yaw = np.zeros(len(x))
+    assert _candidate_clearance(passes_too_close, yaw, cfg, (), .036) is None
+    assert _candidate_clearance(has_room, yaw, cfg, (), .036) is not None
