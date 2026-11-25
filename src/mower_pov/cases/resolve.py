@@ -14,5 +14,9 @@ def resolve_case(spec: ScenarioSpec, seed: int) -> ResolvedCase:
 
 
 def scenario_digest(case: ResolvedCase) -> str:
-    return sha256(json.dumps(asdict(case), sort_keys=True, separators=(",", ":"),
+    return canonical_digest(asdict(case))
+
+
+def canonical_digest(value):
+    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
                              allow_nan=False).encode("utf-8")).hexdigest()

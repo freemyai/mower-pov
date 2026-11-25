@@ -3,6 +3,7 @@
 import argparse
 import json
 from pathlib import Path
+import sys
 
 from .environment import probe_environment
 
@@ -51,7 +52,18 @@ def main(argv=None):
     assemble = commands.add_parser("assemble")
     assemble.add_argument("production_dir", type=Path)
     assemble.add_argument("--audio", type=Path)
+    # Only the cases command needs the schema toolkit.
+    incoming = argv if argv is not None else sys.argv[1:]
+    if not incoming or incoming[0] in {"cases", "-h", "--help"}:
+        from .cases.runner import add_case_commands
+        add_case_commands(commands)
     args = parser.parse_args(argv)
+    if args.command == "cases":
+        from .cases.runner import case_command
+        try:
+            return case_command(args)
+        except (OSError, ValueError) as exc:
+            parser.exit(2, f"cases: {exc}\n")
     if args.command == "assemble":
         from .rendering.preview import assemble_video
 

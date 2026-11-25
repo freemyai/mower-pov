@@ -59,3 +59,17 @@ def simple_trace(simple_case):
     from mower_pov.policies.legacy import LegacyPlanner
 
     return run_offline(simple_case, LegacyPlanner("legacy-joint"))
+
+
+@pytest.fixture
+def two_case_suite(scenario, write_scenario, tmp_path):
+    scenario["world"].update(x_limits_m=[-.5, .5], row_y_m=[0.], obstacles=[])
+    scenario["termination"]["max_sim_time_s"] = 7
+    ids = ("S00-alpha", "S00-beta")
+    for identifier in ids:
+        scenario["id"] = identifier
+        write_scenario(scenario, f"{identifier}.json")
+    suite = tmp_path / "suite.json"
+    suite.write_text(json.dumps({"version":1, "id":"synthetic",
+                                 "cases":[{"id":n, "path":f"{n}.json"} for n in ids]}))
+    return suite
