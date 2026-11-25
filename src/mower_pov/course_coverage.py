@@ -7,7 +7,6 @@ from itertools import combinations
 
 import numpy as np
 
-from .course_layout import COURSE_ROW_Y, COURSE_X_LIMITS
 from .controller import SPIN_DOWN_S, SPIN_UP_S
 from .obstacles import distance_to_segment
 from .terrain import grid_to_xy
@@ -23,26 +22,26 @@ class SweepOption:
 class SweepGrid:
     """Small local grid for planning. Playback still uses the exact cutter sweep."""
 
-    def __init__(self, config):
+    def __init__(self, config, layout):
         self.cell_m = .025
         self.radius = config.mower.blade_radius_m
         self.blade_offset = config.mower.blade_xy_m
         margin = .87 + self.radius + np.linalg.norm(self.blade_offset)
-        self.origin = np.array([COURSE_X_LIMITS[0] - margin, min(COURSE_ROW_Y) - margin])
-        self.width = int(np.ceil((COURSE_X_LIMITS[1] + margin - self.origin[0]) / self.cell_m))
-        self.height = int(np.ceil((max(COURSE_ROW_Y) + margin - self.origin[1]) / self.cell_m))
+        self.origin = np.array([layout.x_limits_m[0] - margin, min(layout.row_y_m) - margin])
+        self.width = int(np.ceil((layout.x_limits_m[1] + margin - self.origin[0]) / self.cell_m))
+        self.height = int(np.ceil((max(layout.row_y_m) + margin - self.origin[1]) / self.cell_m))
         columns = self.origin[0] + (np.arange(self.width) + .5) * self.cell_m
         turn_band = .4 * config.mower.length_m
-        interior = (columns > COURSE_X_LIMITS[0] + turn_band) & (columns < COURSE_X_LIMITS[1] - turn_band)
+        interior = (columns > layout.x_limits_m[0] + turn_band) & (columns < layout.x_limits_m[1] - turn_band)
         self.interior = int.from_bytes(np.packbits(np.tile(interior, self.height), bitorder="little").tobytes(),
                                       "little")
         radius_cells = int(np.ceil(self.radius / self.cell_m)) + 1
         offsets = np.arange(-radius_cells, radius_cells + 1)
         self.dx, self.dy = np.meshgrid(offsets, offsets)
         self.dx, self.dy = self.dx.ravel(), self.dy.ravel()
-        x = np.linspace(*COURSE_X_LIMITS, 256)
+        x = np.linspace(*layout.x_limits_m, 256)
         self.target = 0
-        for y in COURSE_ROW_Y:
+        for y in layout.row_y_m:
             self.target |= self.footprint(np.column_stack((x, x * 0 + y)), np.zeros(len(x)), blade_offset=False)
 
     def footprint(self, xy, yaw, *, blade_offset=True):

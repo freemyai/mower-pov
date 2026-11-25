@@ -11,9 +11,7 @@ from .controller import (CUTTING_ROTOR_FRACTION, SPIN_DOWN_S, SPIN_UP_S,
                          _half_turn, _smoothstep)
 from .course_coverage import SweepGrid, SweepOption, idle_blade_commands, select_coverage_sequence
 from .cutting import compute_cut_state
-from .course_layout import (BODY_DESIGN_CLEARANCE_M, COURSE_OBSTACLES,
-                            COURSE_ROW_Y, COURSE_X_LIMITS, obstacle_clearance,
-                            obstacle_swept_clearance)
+from .course_layout import CourseLayout, DEFAULT_COURSE, obstacle_clearance, obstacle_swept_clearance
 from .motion import segments_hit_box, trajectory_from_path
 from .obstacles import FENCE_ENDPOINTS, FENCE_Y, distance_to_segment, validate_story_layout
 
@@ -42,6 +40,7 @@ class CoursePlan:
     turn_duration: float
     required_time: float
     coverage_report: dict
+    layout: CourseLayout = DEFAULT_COURSE
 
     def report(self):
         start = .75
@@ -49,7 +48,7 @@ class CoursePlan:
         for i, row in enumerate(self.rows):
             stop = start + row.duration
             report.append({
-                "row": i + 1, "nominal_y_m": COURSE_ROW_Y[i],
+                "row": i + 1, "nominal_y_m": self.layout.row_y_m[i],
                 "t_start_s": float(start), "t_end_s": float(stop),
                 "route_length_m": float(row.s[-1]), "bypass_offset_m": row.offset_m,
                 "nominal_blockers": row.nominal_blockers, "compared_candidates": row.candidate_count,
@@ -99,8 +98,9 @@ def _profile(s, curvature, obstacle_margin, mower):
     return speed, times
 
 
-def _all_pose_clearances(xy, yaw, config):
-    return np.stack([obstacle_swept_clearance(xy, yaw, config, p) for p in COURSE_OBSTACLES])
+def _all_pose_clearances(xy, yaw, config, layout):
+    distances = [obstacle_swept_clearance(xy, yaw, config, item) for item in layout.obstacles]
+    return np.minimum.reduce(distances) if distances else np.full(len(xy), config.world.width_m + config.world.depth_m)
 
 
 def _cycloid_step(x, begin, end):
@@ -108,11 +108,15 @@ def _cycloid_step(x, begin, end):
     return u - np.sin(2 * np.pi * u) / (2 * np.pi)
 
 
-def _row_shapes(x, lane_y, nominal, collision_columns):
+def _row_shapes(x, lane_y, nominal, collision_columns, obstacles):
     if not collision_columns.any():
         yield np.zeros_like(x), 0., None
+        if not obstacles:
+            return
         # An unobstructed lane may collect grass skipped by another lane's detour.
         for entry, exit in ((-.85, -.20), (-.18, .40), (.32, .67), (-.77, .52)):
+            if not x[0] < entry < exit < x[-1]:
+                continue
             shape = (_smoothstep(x, max(x[0], entry - .72), entry)
                      - _smoothstep(x, exit, min(x[-1], exit + .72)))
             for offset in (-.22, -.15, -.08, .08, .15, .22):
@@ -132,9 +136,11 @@ def _row_shapes(x, lane_y, nominal, collision_columns):
                     offset = float(sign * magnitude)
                     yield shape * offset, offset, (start, entry, exit, stop)
 
+    if not obstacles:
+        return
     # A second family can begin and end at different distances from an obstacle.
     # Its hold points follow the prop itself, with the full box sweep checked below.
-    obstacle = COURSE_OBSTACLES[int(np.argmin(nominal.min(axis=1)))]
+    obstacle = obstacles[int(np.argmin(nominal.min(axis=1)))]
     points = np.asarray(obstacle.points)
     close = points[abs(points[:, 1] - lane_y) < .26 + obstacle.radius_m]
     pivot = float(np.median(close[:, 0])) if len(close) else float(points[0, 0])
@@ -158,7 +164,7 @@ def _row_shapes(x, lane_y, nominal, collision_columns):
                     yield shape * offset, float(offset), knots if collision_columns.any() else None
 
 
-def _candidate_clearance(xy, yaw, config, bounds, design_clearance):
+def _candidate_clearance(xy, yaw, config, bounds, design_clearance, yard_context=True):
     corner = .5 * np.hypot(config.mower.length_m, config.mower.width_m)
     chords = np.linalg.norm(np.diff(xy, axis=0), axis=1)
     step = .5 * (chords + corner * abs(np.diff(yaw)))
@@ -176,10 +182,11 @@ def _candidate_clearance(xy, yaw, config, bounds, design_clearance):
     if overlaps_bounds and segments_hit_box(xy[:-1], xy[1:], bed_min, bed_max).any():
         return None
     # The play rail belongs to the surrounding yard rather than the course props.
-    a, b = FENCE_ENDPOINTS
-    rail = distance_to_segment(xy, (a, FENCE_Y), (b, FENCE_Y))
-    if np.min(rail - pad) < corner + .10:
-        return None
+    if yard_context:
+        a, b = FENCE_ENDPOINTS
+        rail = distance_to_segment(xy, (a, FENCE_Y), (b, FENCE_Y))
+        if np.min(rail - pad) < corner + .10:
+            return None
     nearest = np.full(len(xy), np.inf)
     for obstacle, low, high in bounds:
         box_delta = np.maximum(np.maximum(low - xy, xy - high), 0.)
@@ -197,32 +204,39 @@ def _candidate_clearance(xy, yaw, config, bounds, design_clearance):
     return nearest
 
 
-def _row_candidates(config, grid, x, lane_y, eastbound):
+def _row_candidates(config, grid, x, lane_y, eastbound, layout):
     nominal_xy = np.column_stack((x, np.full_like(x, lane_y)))
-    nominal = np.stack([obstacle_clearance(nominal_xy, np.zeros(len(x)), config, item)
-                        for item in COURSE_OBSTACLES])
-    planning_clearance = BODY_DESIGN_CLEARANCE_M + .001
+    nominal = np.asarray([obstacle_clearance(nominal_xy, np.zeros(len(x)), config, item)
+                          for item in layout.obstacles]).reshape(-1, len(x))
+    planning_clearance = layout.clearance_m + .001
     blocked = nominal < planning_clearance + .002
-    blockers = tuple(obstacle.name for obstacle, collision in zip(COURSE_OBSTACLES, blocked)
+    columns = blocked.any(axis=0)
+    if not layout.yard_context:
+        x0, y0, x1, y1 = config.world.flower_bed_xyxy_m
+        half_length, half_width = config.mower.length_m / 2, config.mower.width_m / 2
+        if y0 - half_width <= lane_y <= y1 + half_width:
+            columns |= (x >= x0 - half_length) & (x <= x1 + half_length)
+    blockers = tuple(obstacle.name for obstacle, collision in zip(layout.obstacles, blocked)
                      if collision.any())
     unique = {}
     tried = 0
     bounds = [(item, np.min(item.points, axis=0), np.max(item.points, axis=0))
-              for item in reversed(COURSE_OBSTACLES)]
-    for deviation, offset, bypass in _row_shapes(x, lane_y, nominal, blocked.any(axis=0)):
+              for item in reversed(layout.obstacles)]
+    for deviation, offset, bypass in _row_shapes(x, lane_y, nominal, columns, layout.obstacles):
         xy, s, yaw, curvature = _row_geometry(x, lane_y + deviation, eastbound)
         tried += 1
         # Reject obvious collisions before checking all chords of the candidate.
-        clearance = _candidate_clearance(xy, yaw, config, bounds, planning_clearance)
+        clearance = _candidate_clearance(xy, yaw, config, bounds, planning_clearance, layout.yard_context)
         if clearance is None:
             continue
         speed, times = _profile(s, curvature, clearance, config.mower)
         mask = grid.footprint(xy, yaw)
         former = unique.get(mask)
         if former is None or times[-1] < former.duration:
-            unique[mask] = Row(xy, s, yaw, curvature, speed, times, offset, blockers, bypass, 0)
+            unique[mask] = Row(xy, s, yaw, curvature, speed, times, offset, blockers,
+                               bypass if blockers else None, 0)
     if not unique:
-        raise ValueError(f"No clear course candidate for row y={lane_y:.2f} m around {', '.join(blockers)}")
+        raise NoFeasiblePlan(f"No clear course candidate for row y={lane_y:.2f} m around {', '.join(blockers)}")
     options = []
     for mask, row in unique.items():
         row.candidate_count = tried
@@ -230,34 +244,58 @@ def _row_candidates(config, grid, x, lane_y, eastbound):
     return options
 
 
-def plan_course(config):
-    """Check the course's known obstacles and choose drivable bypasses."""
-    mower = config.mower
-    turn_radius = abs(COURSE_ROW_Y[1] - COURSE_ROW_Y[0]) * .5
+class NoFeasiblePlan(ValueError):
+    """No drivable candidate in the supplied route family."""
+
+
+class CourseBudgetExceeded(ValueError):
+    """The route exceeds the supplied time budget."""
+
+
+def turn_duration_s(mower, turn_radius):
+    if not turn_radius:
+        return 0.
     omega = min(mower.max_omega_radps, mower.max_speed_mps / turn_radius)
     alpha = min(mower.max_alpha_radps2, mower.max_accel_mps2 / turn_radius)
     peak = min(omega, np.sqrt(np.pi * alpha))
-    turn_duration = np.pi / peak + peak / alpha
-    overhead = .75 + (len(COURSE_ROW_Y) - 1) * turn_duration + SPIN_DOWN_S + .35
-    span = COURSE_X_LIMITS[1] - COURSE_X_LIMITS[0]
-    lower_time = overhead + len(COURSE_ROW_Y) * span / mower.max_speed_mps
+    return np.pi / peak + peak / alpha
+
+
+def check_course_turns(config, rows, layout, duration):
+    bounds = [(o, np.min(o.points, axis=0), np.max(o.points, axis=0)) for o in layout.obstacles]
+    for row in rows[:-1]:
+        xy, yaw, _, _ = _evaluate_turn(config, row, np.linspace(0., duration, 181), layout)
+        if _candidate_clearance(xy, yaw, config, bounds, layout.clearance_m, layout.yard_context) is None:
+            raise NoFeasiblePlan("a fixed end-of-row turn conflicts with the static layout")
+
+
+def plan_course(config, layout=DEFAULT_COURSE):
+    """Check the course's known obstacles and choose drivable bypasses."""
+    mower = config.mower
+    turn_duration = turn_duration_s(mower, layout.turn_radius_m)
+    count = len(layout.row_y_m)
+    overhead = .75 + (count - 1) * turn_duration + SPIN_DOWN_S + .35
+    span = layout.x_limits_m[1] - layout.x_limits_m[0]
+    lower_time = overhead + count * span / mower.max_speed_mps
     if config.world.duration_s < lower_time:
-        raise ValueError(f"mowing course needs at least {lower_time:.2f} seconds with the configured motion limits")
-    x = np.linspace(*COURSE_X_LIMITS, 527)
-    grid = SweepGrid(config)
-    candidates = [_row_candidates(config, grid, x, lane, index % 2 == 0)
-                  for index, lane in enumerate(COURSE_ROW_Y)]
+        raise CourseBudgetExceeded(f"mowing course needs at least {lower_time:.2f} seconds with the configured motion limits")
+    x = np.linspace(*layout.x_limits_m, 527 if layout.yard_context else 181)
+    grid = SweepGrid(config, layout)
+    candidates = [_row_candidates(config, grid, x, lane, index % 2 == 0, layout)
+                  for index, lane in enumerate(layout.row_y_m)]
     options = [tuple(option for option, _ in row) for row in candidates]
     fastest = overhead + sum(min(option.duration for option in row) for row in options)
     turn_masks = []
+    if not layout.yard_context:
+        check_course_turns(config, tuple(row[0][1] for row in candidates), layout, turn_duration)
     for row in candidates[:-1]:
-        xy, yaw, _, _ = _evaluate_turn(config, row[0][1], np.linspace(0., turn_duration, 181))
+        xy, yaw, _, _ = _evaluate_turn(config, row[0][1], np.linspace(0., turn_duration, 181), layout)
         turn_masks.append(grid.footprint(xy, yaw))
     indices = select_coverage_sequence(options, grid.target, grid.cell_m ** 2,
                                        config.world.duration_s - overhead, fixed_sweeps=turn_masks,
                                        repeat_zone=grid.interior)
     if indices is None:
-        raise ValueError(f"mowing course needs {fastest:.2f} seconds with the configured motion limits")
+        raise CourseBudgetExceeded(f"mowing course needs {fastest:.2f} seconds with the configured motion limits")
     rows = tuple(candidates[i][j][1] for i, j in enumerate(indices))
     seen = repeated_mask = repeat = 0
     gains = []
@@ -275,10 +313,10 @@ def plan_course(config):
               "distinct_valid_options_per_row": [len(row) for row in options],
               "revisited_area_m2": repeated_mask.bit_count() * grid.cell_m ** 2,
               "new_target_area_per_row_m2": gains, "repeated_sweep_m2": repeat * grid.cell_m ** 2}
-    return CoursePlan(rows, turn_duration, overhead + sum(row.duration for row in rows), report)
+    return CoursePlan(rows, turn_duration, overhead + sum(row.duration for row in rows), report, layout)
 
 
-def _evaluate_row(row, seconds):
+def _evaluate_row(row, seconds, layout):
     index = np.minimum(np.searchsorted(row.times, seconds, side="right") - 1, len(row.times) - 2)
     u = seconds - row.times[index]
     acceleration = (row.speed[index + 1] - row.speed[index]) / (row.times[index + 1] - row.times[index])
@@ -299,7 +337,7 @@ def _evaluate_row(row, seconds):
         modes[(x >= lead) & (x < plan_end)] = "REPLAN"
         modes[(x >= plan_end) & (x < exit)] = "BYPASS"
         modes[(x >= exit) & (x <= stop)] = "REJOIN"
-        relevant = [item for item in COURSE_OBSTACLES if item.name in row.nominal_blockers]
+        relevant = [item for item in layout.obstacles if item.name in row.nominal_blockers]
         pivot = np.array([np.mean(np.asarray(item.points)[:, 0]) for item in relevant])
         closest = np.argmin(np.abs(xy[:, :1] - pivot), axis=1)
         on_change = modes != "MOW"
@@ -307,9 +345,9 @@ def _evaluate_row(row, seconds):
     return xy, yaw, v, omega, modes, names
 
 
-def _evaluate_turn(config, row, seconds):
+def _evaluate_turn(config, row, seconds, layout):
     m = config.mower
-    radius = .5 * abs(COURSE_ROW_Y[1] - COURSE_ROW_Y[0])
+    radius = layout.turn_radius_m
     cap_omega = min(m.max_omega_radps, m.max_speed_mps / radius)
     cap_alpha = min(m.max_alpha_radps2, m.max_accel_mps2 / radius)
     forward = row.xy[0, 0] < row.xy[-1, 0]
@@ -322,19 +360,21 @@ def _evaluate_turn(config, row, seconds):
     return xy, yaw, radius * speed, direction * speed
 
 
-def run_course(config, terrain):
-    plan = plan_course(config)
+def run_course(config, terrain, plan=None):
+    plan = plan_course(config) if plan is None else plan
+    layout = plan.layout
     times = np.arange(round(config.world.duration_s * config.world.step_hz) + 1) / config.world.step_hz
     xy = np.tile(plan.rows[0].xy[0], (len(times), 1))
     yaw, v, omega = (np.zeros(len(times)) for _ in range(3))
     mode = np.full(len(times), "PARK", dtype="U8")
-    obstacle = np.full(len(times), "", dtype="U12")
+    name_width = max([12, *(len(item.name) for item in layout.obstacles)])
+    obstacle = np.full(len(times), "", dtype=f"U{name_width}")
     start = .75
     for index, row in enumerate(plan.rows):
         end = start + row.duration
         moving = (times >= start) & (times < end)
         xy[moving], yaw[moving], v[moving], omega[moving], mode[moving], obstacle[moving] = (
-            _evaluate_row(row, times[moving] - start))
+            _evaluate_row(row, times[moving] - start, layout))
         start = end
         if index + 1 == len(plan.rows):
             xy[times >= end] = row.xy[-1]
@@ -343,22 +383,24 @@ def run_course(config, terrain):
         end = start + plan.turn_duration
         turning = (times >= start) & (times < end)
         xy[turning], yaw[turning], v[turning], omega[turning] = _evaluate_turn(
-            config, row, times[turning] - start)
+            config, row, times[turning] - start, layout)
         mode[turning] = "TURN"
         start = end
 
-    validate_story_layout(config, terrain, xy)
-    clearance = _all_pose_clearances(xy, yaw, config).min(axis=0)
-    if clearance.min() < BODY_DESIGN_CLEARANCE_M:
+    if layout.yard_context:
+        validate_story_layout(config, terrain, xy)
+    clearance = _all_pose_clearances(xy, yaw, config, layout)
+    if layout.yard_context and clearance.min() < layout.clearance_m:
         i = int(np.argmin(clearance))
-        raise ValueError(f"mowing course sweep has only {clearance[i]:.3f} m clearance at {times[i]:.3f}s")
+        raise NoFeasiblePlan(f"mowing course sweep has only {clearance[i]:.3f} m clearance at {times[i]:.3f}s")
 
     command = (times >= .08) & (times < end)
     rotor = np.clip((times - .08) / SPIN_UP_S, 0., 1.)
     rotor = np.minimum(rotor, np.clip(1 - (times - end) / SPIN_DOWN_S, 0., 1.))
     blade = rotor >= CUTTING_ROTOR_FRACTION
     trajectory = trajectory_from_path(config, terrain, times, xy, yaw, v, omega, blade, rotor)
-    story = StoryState(story_tracks(config.scenario), mode, np.isin(mode, ["REPLAN", "BYPASS"]),
+    tracks = story_tracks(config.scenario) if layout.yard_context else np.empty((0, 6))
+    story = StoryState(tracks, mode, np.isin(mode, ["REPLAN", "BYPASS"]),
                        obstacle, clearance, command, rotor)
     return trajectory, story, plan
 

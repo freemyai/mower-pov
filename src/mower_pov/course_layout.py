@@ -33,6 +33,22 @@ COURSE_OBSTACLES = (
 )
 
 
+@dataclass(frozen=True)
+class CourseLayout:
+    x_limits_m: tuple[float, float] = COURSE_X_LIMITS
+    row_y_m: tuple[float, ...] = COURSE_ROW_Y
+    obstacles: tuple[CourseObstacle, ...] = COURSE_OBSTACLES
+    clearance_m: float = BODY_DESIGN_CLEARANCE_M
+    yard_context: bool = True
+
+    @property
+    def turn_radius_m(self):
+        return (self.row_y_m[0] - self.row_y_m[1]) / 2 if len(self.row_y_m) > 1 else 0.
+
+
+DEFAULT_COURSE = CourseLayout()
+
+
 def course_layout_identity():
     return {
         "x_limits_m": list(COURSE_X_LIMITS),
