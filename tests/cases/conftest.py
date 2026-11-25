@@ -42,3 +42,20 @@ def write_scenario(tmp_path):
         path.write_text(json.dumps(data))
         return path
     return write
+
+
+@pytest.fixture
+def simple_case(scenario, write_scenario):
+    from mower_pov.cases.schema import load_spec
+
+    scenario["world"].update(x_limits_m=[-.5, .5], row_y_m=[0.], obstacles=[])
+    scenario["termination"]["max_sim_time_s"] = 7
+    return load_spec(write_scenario(scenario)).case
+
+
+@pytest.fixture
+def simple_trace(simple_case):
+    from mower_pov.cases.legacy import run_offline
+    from mower_pov.policies.legacy import LegacyPlanner
+
+    return run_offline(simple_case, LegacyPlanner("legacy-joint"))
