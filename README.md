@@ -51,3 +51,11 @@ for the commands, artifact paths, and review status.
 a waiting hedgehog, a separately modeled blade rotor, and a return over the cut swath.
 It uses scene truth for obstacle occupancy. See the [production guide](docs/dynamic-production.md)
 and [dog asset and contact measurements](docs/dog-rig.zh-CN.md).
+
+## Static mowing corner cases
+
+The static development suite runs 30 fixed-seed scenarios across six families.
+The runner compares sequential and joint planning on the same known geometry.
+A separate evaluator checks continuous chassis clearance, the actual trajectory,
+and persistent cutting state. Numeric batches run on CPU. Blender can replay
+a recorded failure window. See the [case guide](docs/cases/ADDING_CASES.md).

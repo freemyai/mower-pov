@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "id": "static-smoke-v1",
+  "cases": [
+    {
+      "id": "S01-01-thin-diagonal",
+      "path": "../static/S01-01-thin-diagonal.json"
+    },
+    {
+      "id": "S02-05-blocked-lane-end",
+      "path": "../static/S02-05-blocked-lane-end.json"
+    },
+    {
+      "id": "S03-05-closed-gap",
+      "path": "../static/S03-05-closed-gap.json"
+    },
+    {
+      "id": "S04-01-u-frame",
+      "path": "../static/S04-01-u-frame.json"
+    },
+    {
+      "id": "S05-01-bed-intrusion",
+      "path": "../static/S05-01-bed-intrusion.json"
+    },
+    {
+      "id": "S06-04-tight-runtime",
+      "path": "../static/S06-04-tight-runtime.json"
+    }
+  ]
+}

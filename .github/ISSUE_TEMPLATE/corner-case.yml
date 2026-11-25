@@ -1,0 +1,39 @@
+name: Mowing corner case
+description: Submit a reproducible mowing scenario or regression.
+title: "[Case] "
+body:
+  - type: input
+    id: case
+    attributes:
+      label: Case ID, repository commit and strategy version
+      placeholder: S01-01-thin-diagonal, <commit>, legacy-joint v1
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Execution mode, seed and data origin
+      placeholder: offline_plan_replay, 20261120, synthetic
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction command and scenario JSON
+      description: Provide the ordered suite or attach the scenario and the exact command.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual outcome
+      description: Include the assertion name, absolute time if known, and how expected feasibility was established.
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Verdict, relevant logs and evidence
+      description: Include the request and state IDs, or explain why the run produced no evidence.
+    validations:
+      required: true

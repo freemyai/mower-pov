@@ -1,0 +1,1397 @@
+{
+  "schema_version": 1,
+  "status": "local_verified_development_suite",
+  "date": "2026-11-25",
+  "mode": "offline_plan_replay",
+  "suite": "static-v1",
+  "source_commit": "86cef9801892d2f2b1461e18bba03e72d8da4ec0",
+  "paired_completed_cases": 24,
+  "runs": {
+    "baseline": {
+      "policy": "legacy-greedy",
+      "request_id": "db5dac7e1e959153605cb0105d66dd238ba586e0638570c952c90ed53e7c4b46",
+      "identity": {
+        "evaluator": "1",
+        "judge_sha256": "3c788a640bcaa060b02d13d205acba829ad18778eff62b02b3299e8f4c1cfde1",
+        "kernel_sha256": "ee4fdd34e89b0417fdb954c6454f6ef5b3f514972d3cd496792533ae6726eceb",
+        "policy": [
+          "legacy-greedy",
+          "1"
+        ],
+        "runner_sha256": "73e3b9cb68cd572ad06deb28f4fafbc1ca830c74a5c6ce08979f50c673fe448c",
+        "timeout_s": 180.0
+      },
+      "outcomes": {
+        "COMPLETED": 24,
+        "SAFE_REJECTION": 6
+      },
+      "paired_completed_totals": {
+        "target_area_m2": 31.743000000000006,
+        "target_cut_m2": 19.519400000000005,
+        "unique_cut_m2": 33.43370000000001,
+        "repeated_area_m2": 1.3416,
+        "extra_visit_area_m2": 1.3416,
+        "distance_m": 118.94542172564883,
+        "target_fraction_cut": 0.6149198248432726
+      }
+    },
+    "candidate": {
+      "policy": "legacy-joint",
+      "request_id": "33adf8863c12ff59ef76f934144c0cd0aed3edd1b14d06f2743f3e9db524a4b0",
+      "identity": {
+        "evaluator": "1",
+        "judge_sha256": "3c788a640bcaa060b02d13d205acba829ad18778eff62b02b3299e8f4c1cfde1",
+        "kernel_sha256": "ee4fdd34e89b0417fdb954c6454f6ef5b3f514972d3cd496792533ae6726eceb",
+        "policy": [
+          "legacy-joint",
+          "1"
+        ],
+        "runner_sha256": "73e3b9cb68cd572ad06deb28f4fafbc1ca830c74a5c6ce08979f50c673fe448c",
+        "timeout_s": 180.0
+      },
+      "outcomes": {
+        "COMPLETED": 24,
+        "SAFE_REJECTION": 6
+      },
+      "paired_completed_totals": {
+        "target_area_m2": 31.743000000000006,
+        "target_cut_m2": 25.3384,
+        "unique_cut_m2": 36.186,
+        "repeated_area_m2": 0.6798000000000001,
+        "extra_visit_area_m2": 0.6798000000000001,
+        "distance_m": 126.38092310367055,
+        "target_fraction_cut": 0.7982358315219102
+      }
+    }
+  },
+  "cases": [
+    {
+      "baseline": {
+        "case_digest": "a33aee63fb3136388d75f7048a27e5d8f0e2962d1c39bd65f4e7467a18ea0006",
+        "first_violation_s": null,
+        "id": "S01-01-thin-diagonal",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "49c6e9662e4586d635cba24ec6432d2205f14fbc7f8165f6f79d073eaf893440",
+        "target_fraction_cut": 0.3161861074705111,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.3074929341434594,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.28950000000000004,
+          "target_fraction_cut": 0.3161861074705111,
+          "unique_cut_m2": 0.9878
+        }
+      },
+      "candidate": {
+        "case_digest": "a33aee63fb3136388d75f7048a27e5d8f0e2962d1c39bd65f4e7467a18ea0006",
+        "first_violation_s": null,
+        "id": "S01-01-thin-diagonal",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "0475045cf67fb1fd0e2a550441e4aef2e429cf8818f838d9e47f2427baf220d0",
+        "target_fraction_cut": 0.7076234163390127,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.7639291609848735,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6479,
+          "target_fraction_cut": 0.7076234163390127,
+          "unique_cut_m2": 1.1146
+        }
+      },
+      "id": "S01-01-thin-diagonal"
+    },
+    {
+      "baseline": {
+        "case_digest": "bd90e10e97a98ddd28e87bfef26b473a157197b4bab6d81411c5a01a0773f511",
+        "first_violation_s": null,
+        "id": "S01-02-thick-reverse",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "f399c3ccf03c1cecba590fa0fefa10a213a2702390c82a605d38c5f89f23294b",
+        "target_fraction_cut": 0.37232415902140675,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.3056318517822896,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.34090000000000004,
+          "target_fraction_cut": 0.37232415902140675,
+          "unique_cut_m2": 0.9872000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "bd90e10e97a98ddd28e87bfef26b473a157197b4bab6d81411c5a01a0773f511",
+        "first_violation_s": null,
+        "id": "S01-02-thick-reverse",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "da002971680962869c0c3da41372d32480d44e2fdcdecd6a23f446f820c467e1",
+        "target_fraction_cut": 0.7089340323285277,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.7319044267533115,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6491,
+          "target_fraction_cut": 0.7089340323285277,
+          "unique_cut_m2": 1.1061
+        }
+      },
+      "id": "S01-02-thick-reverse"
+    },
+    {
+      "baseline": {
+        "case_digest": "f8cd073006d9ba4fc5850548fa784de62f65160af6e217a8ac26619989d30b72",
+        "first_violation_s": null,
+        "id": "S01-03-curved-hose",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "78d1b87ac7b7e93f7494567f5212a88519cde1429ef8b8181983a6c7cb0d7d95",
+        "target_fraction_cut": 0.3520096111839231,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.2790717296787104,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.32230000000000003,
+          "target_fraction_cut": 0.3520096111839231,
+          "unique_cut_m2": 0.9800000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "f8cd073006d9ba4fc5850548fa784de62f65160af6e217a8ac26619989d30b72",
+        "first_violation_s": null,
+        "id": "S01-03-curved-hose",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "b13010acb362c1ef6eee71b952b4fa8eaaaf437f2dfbd69d23a2f5aed3bf5c7c",
+        "target_fraction_cut": 0.7092616863259065,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.7319047857677186,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6494,
+          "target_fraction_cut": 0.7092616863259065,
+          "unique_cut_m2": 1.1067
+        }
+      },
+      "id": "S01-03-curved-hose"
+    },
+    {
+      "baseline": {
+        "case_digest": "9793d4bf50e55329977e534066fca358521f985d46451ac2c7c15209b4c43e81",
+        "first_violation_s": null,
+        "id": "S01-04-short-end",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "0ebf1297736d34b095cb93109330a19ccb3a30b8f62f5a9f0d91d34b12e6ce21",
+        "target_fraction_cut": 0.4397116644823067,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.3295112422846147,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.4026,
+          "target_fraction_cut": 0.4397116644823067,
+          "unique_cut_m2": 0.9933000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "9793d4bf50e55329977e534066fca358521f985d46451ac2c7c15209b4c43e81",
+        "first_violation_s": null,
+        "id": "S01-04-short-end",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "8bfc10ef85db24b26a33c72d608bc970d6ec2d5501c093bbe9413f73e8bcd56a",
+        "target_fraction_cut": 0.7076234163390127,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.763928425202611,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6479,
+          "target_fraction_cut": 0.7076234163390127,
+          "unique_cut_m2": 1.1146
+        }
+      },
+      "id": "S01-04-short-end"
+    },
+    {
+      "baseline": {
+        "case_digest": "0d2160fe929072afe3bef28a563e5c724633781dec415fe66188f2cf6c0bc16a",
+        "first_violation_s": null,
+        "id": "S01-05-cross-yard",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "2109e6fd228f64a7c7cf84a88237dfd2da3753de2b81d9e82f2f167362c6674e",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "candidate": {
+        "case_digest": "0d2160fe929072afe3bef28a563e5c724633781dec415fe66188f2cf6c0bc16a",
+        "first_violation_s": null,
+        "id": "S01-05-cross-yard",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "d19f78c89eef32356db108401060ae211b3a2c3aa35ac40827b605e5fd08d919",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "id": "S01-05-cross-yard"
+    },
+    {
+      "baseline": {
+        "case_digest": "1c0473c80503d59a467aee2de7a74852c3d988a242b6478f5408fb382f6e7cff",
+        "first_violation_s": null,
+        "id": "S02-01-ball-ahead",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "f76064f0adcbbd3f0b52e1a4dc989412d6a59d805d4415cdfa4bfa075f99cacc",
+        "target_fraction_cut": 1.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.492698915326016,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0925,
+          "repeated_area_m2": 0.0925,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.7369,
+          "target_fraction_cut": 1.0,
+          "unique_cut_m2": 1.7865
+        }
+      },
+      "candidate": {
+        "case_digest": "1c0473c80503d59a467aee2de7a74852c3d988a242b6478f5408fb382f6e7cff",
+        "first_violation_s": null,
+        "id": "S02-01-ball-ahead",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "20408530a6ade0b6356ba464c39ba4303cb93b5659093d7428824f28958e661a",
+        "target_fraction_cut": 0.9747250849214117,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.505289604104201,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0526,
+          "repeated_area_m2": 0.0526,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.693,
+          "target_fraction_cut": 0.9747250849214117,
+          "unique_cut_m2": 1.83
+        }
+      },
+      "id": "S02-01-ball-ahead"
+    },
+    {
+      "baseline": {
+        "case_digest": "89e416f6a5f063f91bf2cb7a50e310368829eda7fcddc5cbc608c81e1a434e02",
+        "first_violation_s": null,
+        "id": "S02-02-ball-outside-arc",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "61b1e6fe71be03f6123d254c670b8df2be293ecdfd3ac1e0c2dfd428b12c66b9",
+        "target_fraction_cut": 1.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.492698915326015,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0925,
+          "repeated_area_m2": 0.0925,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.7369,
+          "target_fraction_cut": 1.0,
+          "unique_cut_m2": 1.7865
+        }
+      },
+      "candidate": {
+        "case_digest": "89e416f6a5f063f91bf2cb7a50e310368829eda7fcddc5cbc608c81e1a434e02",
+        "first_violation_s": null,
+        "id": "S02-02-ball-outside-arc",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "c556535146c03cb9e12f0988f2d1a0a7d13a98cd679085b8f9e7aab7f1e1ed3c",
+        "target_fraction_cut": 0.9747250849214117,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.505289608860939,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0526,
+          "repeated_area_m2": 0.0526,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.693,
+          "target_fraction_cut": 0.9747250849214117,
+          "unique_cut_m2": 1.83
+        }
+      },
+      "id": "S02-02-ball-outside-arc"
+    },
+    {
+      "baseline": {
+        "case_digest": "e4061da002cec3e910985e017e24d607428d9184f655dc10e4ac5790a41ce97f",
+        "first_violation_s": null,
+        "id": "S02-03-large-ball",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "217098132e543028dc93a4b5f38e2f4855816db7ce87177314e308716aa9c750",
+        "target_fraction_cut": 1.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.492698915326017,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0925,
+          "repeated_area_m2": 0.0925,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.7369,
+          "target_fraction_cut": 1.0,
+          "unique_cut_m2": 1.7865
+        }
+      },
+      "candidate": {
+        "case_digest": "e4061da002cec3e910985e017e24d607428d9184f655dc10e4ac5790a41ce97f",
+        "first_violation_s": null,
+        "id": "S02-03-large-ball",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "c03f9deeeb419a11b40b97a87f340680c8dd2d2dc4c1a4233bb9eb15b83525ac",
+        "target_fraction_cut": 0.9747250849214117,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.505289639181076,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0526,
+          "repeated_area_m2": 0.0526,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.693,
+          "target_fraction_cut": 0.9747250849214117,
+          "unique_cut_m2": 1.83
+        }
+      },
+      "id": "S02-03-large-ball"
+    },
+    {
+      "baseline": {
+        "case_digest": "60f9d25afad38aa5a7ec6891aa83d19b8b929a71d9e461cf21eee0f941d810e6",
+        "first_violation_s": null,
+        "id": "S02-04-ball-at-exit",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "df2494c4ed5b86c01e8f1319b201b78792236d97951c0e1ed010c8a4d8e3cc13",
+        "target_fraction_cut": 1.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.492698915326016,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0925,
+          "repeated_area_m2": 0.0925,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.7369,
+          "target_fraction_cut": 1.0,
+          "unique_cut_m2": 1.7865
+        }
+      },
+      "candidate": {
+        "case_digest": "60f9d25afad38aa5a7ec6891aa83d19b8b929a71d9e461cf21eee0f941d810e6",
+        "first_violation_s": null,
+        "id": "S02-04-ball-at-exit",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "2ef24370f2496e6b4d4e8ad27810253ce8ef59af98c308532d4bd2fb42d701be",
+        "target_fraction_cut": 0.9747250849214117,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 6.50528962420513,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0526,
+          "repeated_area_m2": 0.0526,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 1.693,
+          "target_fraction_cut": 0.9747250849214117,
+          "unique_cut_m2": 1.83
+        }
+      },
+      "id": "S02-04-ball-at-exit"
+    },
+    {
+      "baseline": {
+        "case_digest": "f64637891ace1c8d33361880b357308f277ae4fff2beb14320ced9a839ec475c",
+        "first_violation_s": null,
+        "id": "S02-05-blocked-lane-end",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "de12f241c55b5f8cc9511f9928f8fa009dd6d9ff610a46da40ebd87aed19b478",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "candidate": {
+        "case_digest": "f64637891ace1c8d33361880b357308f277ae4fff2beb14320ced9a839ec475c",
+        "first_violation_s": null,
+        "id": "S02-05-blocked-lane-end",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "a69acdc24cb473b5325129cbb51129bd193b043c46d059b2c96945ea33e5c6c9",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 1.7369,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "id": "S02-05-blocked-lane-end"
+    },
+    {
+      "baseline": {
+        "case_digest": "1ff09af584cd19d85d87c34233cc7ced37f80a0da79d58060b36c28f87e64367",
+        "first_violation_s": null,
+        "id": "S03-01-open-gap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "ea57524bd5cc5fbf3285b350f5baed5a772321a09981bd16665a48cbd12f3720",
+        "target_fraction_cut": 0.6193752730449978,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.104575528187956,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.5671,
+          "target_fraction_cut": 0.6193752730449978,
+          "unique_cut_m2": 0.9311
+        }
+      },
+      "candidate": {
+        "case_digest": "1ff09af584cd19d85d87c34233cc7ced37f80a0da79d58060b36c28f87e64367",
+        "first_violation_s": null,
+        "id": "S03-01-open-gap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "637ffe97256aae5f56adb25112af04a3fe70434ca99940e44c10bdfbcbb158dc",
+        "target_fraction_cut": 0.8979903888160768,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.0958641461399132,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.8222,
+          "target_fraction_cut": 0.8979903888160768,
+          "unique_cut_m2": 0.929
+        }
+      },
+      "id": "S03-01-open-gap"
+    },
+    {
+      "baseline": {
+        "case_digest": "81237e8288c843a868267d0bf9d643ddf43affae5e04c97b472635940d38ad23",
+        "first_violation_s": null,
+        "id": "S03-02-short-gap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "100d514e1e66350d1b47f738accb3a96d10dd4c26a30a36946c1541805ef2710",
+        "target_fraction_cut": 0.4340323285277414,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1652321166584922,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.39740000000000003,
+          "target_fraction_cut": 0.4340323285277414,
+          "unique_cut_m2": 0.9483
+        }
+      },
+      "candidate": {
+        "case_digest": "81237e8288c843a868267d0bf9d643ddf43affae5e04c97b472635940d38ad23",
+        "first_violation_s": null,
+        "id": "S03-02-short-gap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "af3f51add9de8a4f3253b46e36b4122ee3cc67f0a2680c2e36e85f93309fa261",
+        "target_fraction_cut": 0.8136740934906073,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.205255713019665,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.745,
+          "target_fraction_cut": 0.8136740934906073,
+          "unique_cut_m2": 0.9594
+        }
+      },
+      "id": "S03-02-short-gap"
+    },
+    {
+      "baseline": {
+        "case_digest": "ee56a87b1f1fb65da39a4bc06144e0c1d2f85d495173b0dbfdc16826460e7645",
+        "first_violation_s": null,
+        "id": "S03-03-small-toy",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "5413da46b1f064f52baac24b7b423cdd76ff92fded603115046a7472b35d2249",
+        "target_fraction_cut": 0.6189384010484927,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1225534846740954,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.5667,
+          "target_fraction_cut": 0.6189384010484927,
+          "unique_cut_m2": 0.9357000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "ee56a87b1f1fb65da39a4bc06144e0c1d2f85d495173b0dbfdc16826460e7645",
+        "first_violation_s": null,
+        "id": "S03-03-small-toy",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "e5e120c147af1a6e57355547b991ea30b0d0fa3f291a8b6becbcb2964f089076",
+        "target_fraction_cut": 0.8547400611620795,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1440928735625073,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.7826000000000001,
+          "target_fraction_cut": 0.8547400611620795,
+          "unique_cut_m2": 0.9424
+        }
+      },
+      "id": "S03-03-small-toy"
+    },
+    {
+      "baseline": {
+        "case_digest": "fa02ebc6ff8c685111f2ae39debdc3a115bdbcc3949fdbc5a5a43bc387a62f8a",
+        "first_violation_s": null,
+        "id": "S03-04-asymmetric-gap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "4cb8de3ba1da76a24ce87565280d8984eba32b7e9d1fb5fa7db29b62096d59da",
+        "target_fraction_cut": 0.38958060288335516,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1652320223845685,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.3567,
+          "target_fraction_cut": 0.38958060288335516,
+          "unique_cut_m2": 0.9482
+        }
+      },
+      "candidate": {
+        "case_digest": "fa02ebc6ff8c685111f2ae39debdc3a115bdbcc3949fdbc5a5a43bc387a62f8a",
+        "first_violation_s": null,
+        "id": "S03-04-asymmetric-gap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "8c11f39165f7a389560c8bcd8ecc614f4b5f74160da2439b2423da5858dff927",
+        "target_fraction_cut": 0.8136740934906073,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.2052568826198176,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.745,
+          "target_fraction_cut": 0.8136740934906073,
+          "unique_cut_m2": 0.9594
+        }
+      },
+      "id": "S03-04-asymmetric-gap"
+    },
+    {
+      "baseline": {
+        "case_digest": "6cb9a8d5f3472bdce3118a047e6290ce5e5b71979b781a802283aec981d55779",
+        "first_violation_s": null,
+        "id": "S03-05-closed-gap",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "2900dd404f9c7769b9a6f6643b97dfe5fc0805d6ba852a6ccc1efabd130e1ace",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "candidate": {
+        "case_digest": "6cb9a8d5f3472bdce3118a047e6290ce5e5b71979b781a802283aec981d55779",
+        "first_violation_s": null,
+        "id": "S03-05-closed-gap",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "147ad416d892fc267189efb3516c605175d5dbfe1fa1380d72e2cd7c0fa8a7e7",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "id": "S03-05-closed-gap"
+    },
+    {
+      "baseline": {
+        "case_digest": "c3001f16d2a43955a0e50ca6fda8c2419db3517e13964a79c2b67544637210a5",
+        "first_violation_s": null,
+        "id": "S04-01-u-frame",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "5755348ac985a814004c39422a842ae646649d33fb6e521f4851d53b35c0aca8",
+        "target_fraction_cut": 0.36380515508955874,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.2198965444941856,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.3331,
+          "target_fraction_cut": 0.36380515508955874,
+          "unique_cut_m2": 0.9628000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "c3001f16d2a43955a0e50ca6fda8c2419db3517e13964a79c2b67544637210a5",
+        "first_violation_s": null,
+        "id": "S04-01-u-frame",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "98c0cb5cbd10152d1976917b07e5cf6df790b9ef178d3f829e3e998656936451",
+        "target_fraction_cut": 0.6917868064657056,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.341015641298984,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6334000000000001,
+          "target_fraction_cut": 0.6917868064657056,
+          "unique_cut_m2": 0.9978
+        }
+      },
+      "id": "S04-01-u-frame"
+    },
+    {
+      "baseline": {
+        "case_digest": "7f00d7325478859f7dd483c6bbf7cc2e68c11f20e0716144e699fd87724cbcf1",
+        "first_violation_s": null,
+        "id": "S04-02-wide-legs",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "cc79423404dda24a8e0c755f83153fd5f2071b623cfb85b14d3bf4de6d5b8dd6",
+        "target_fraction_cut": 0.33114897335080823,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1811659740853786,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.3032,
+          "target_fraction_cut": 0.33114897335080823,
+          "unique_cut_m2": 0.9525
+        }
+      },
+      "candidate": {
+        "case_digest": "7f00d7325478859f7dd483c6bbf7cc2e68c11f20e0716144e699fd87724cbcf1",
+        "first_violation_s": null,
+        "id": "S04-02-wide-legs",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "f175329eb6db0ef8be2e10c096487c07ce60eb9e77ded37bcfeb4379db4d0a07",
+        "target_fraction_cut": 0.6697247706422018,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.138850633405667,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6132000000000001,
+          "target_fraction_cut": 0.6697247706422018,
+          "unique_cut_m2": 0.9410000000000001
+        }
+      },
+      "id": "S04-02-wide-legs"
+    },
+    {
+      "baseline": {
+        "case_digest": "f71c9e97ee6d6d9d4a1ea8e38126fedf6221d66aea8bc4ff9597ea11be75ade5",
+        "first_violation_s": null,
+        "id": "S04-03-thick-crossbar",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "2988935de049056bd2d1383b84705893f8d0c62acfd241c34cafd88b1b16a4c7",
+        "target_fraction_cut": 0.3568152031454784,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.2388477959974162,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.3267,
+          "target_fraction_cut": 0.3568152031454784,
+          "unique_cut_m2": 0.9688
+        }
+      },
+      "candidate": {
+        "case_digest": "f71c9e97ee6d6d9d4a1ea8e38126fedf6221d66aea8bc4ff9597ea11be75ade5",
+        "first_violation_s": null,
+        "id": "S04-03-thick-crossbar",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "ed7a3f0f7c10194cd8dd9ca63ed0c81ff37e59364339efc8c67fe0e50d9a4eff",
+        "target_fraction_cut": 0.6590214067278287,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.244895567127678,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6034,
+          "target_fraction_cut": 0.6590214067278287,
+          "unique_cut_m2": 0.9698
+        }
+      },
+      "id": "S04-03-thick-crossbar"
+    },
+    {
+      "baseline": {
+        "case_digest": "6eef42f68233066841f2ba4f90bd268dcc62bb945b51f1b5b71a7c32786ce29f",
+        "first_violation_s": null,
+        "id": "S04-04-off-centre",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "92c91580576169f579201ae322cb76c18cef56dd78c4208bb85ecaa75b0dc10d",
+        "target_fraction_cut": 0.4291175185670599,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1924116469758923,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.3929,
+          "target_fraction_cut": 0.4291175185670599,
+          "unique_cut_m2": 0.9554
+        }
+      },
+      "candidate": {
+        "case_digest": "6eef42f68233066841f2ba4f90bd268dcc62bb945b51f1b5b71a7c32786ce29f",
+        "first_violation_s": null,
+        "id": "S04-04-off-centre",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "367e37263f2ddd70db4fa3ab6fa5656a17df0a26b54d064c3a0d215d650beb63",
+        "target_fraction_cut": 0.7400611620795107,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.138850437789997,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.6776,
+          "target_fraction_cut": 0.7400611620795107,
+          "unique_cut_m2": 0.9410000000000001
+        }
+      },
+      "id": "S04-04-off-centre"
+    },
+    {
+      "baseline": {
+        "case_digest": "02369238be01d1cc630f71049fc9645e0495b8d046060727a5561324c1178a3a",
+        "first_violation_s": null,
+        "id": "S04-05-foot-on-waypoint",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "6b2548399798b4ce8b8add25234ef94c18ecd296a9a426c91a6d8585f987ddf0",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "candidate": {
+        "case_digest": "02369238be01d1cc630f71049fc9645e0495b8d046060727a5561324c1178a3a",
+        "first_violation_s": null,
+        "id": "S04-05-foot-on-waypoint",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "9ff7467313bdd86dca91bbace01e6643affcd12473b73b4c33f6f2b83ca2e2a1",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "id": "S04-05-foot-on-waypoint"
+    },
+    {
+      "baseline": {
+        "case_digest": "62c9679dd4b96712ed59d24eae0dc8fb689ebb06bf8ed2de1228bcf90b9d42f0",
+        "first_violation_s": null,
+        "id": "S05-01-bed-intrusion",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "fc0e4edfc00ad1e040f987e6f391c652e76c9add7d943e6bcb51ea7ddab3cd3a",
+        "target_fraction_cut": 0.5294888597640891,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1225533476814284,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.4848,
+          "target_fraction_cut": 0.5294888597640891,
+          "unique_cut_m2": 0.9359000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "62c9679dd4b96712ed59d24eae0dc8fb689ebb06bf8ed2de1228bcf90b9d42f0",
+        "first_violation_s": null,
+        "id": "S05-01-bed-intrusion",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "5f23e22116029eda5bbcd4ad79e998924335978517348cc6bfd56590d02e58dd",
+        "target_fraction_cut": 0.6067059851463521,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.1540062255555474,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.5555,
+          "target_fraction_cut": 0.6067059851463521,
+          "unique_cut_m2": 0.9452
+        }
+      },
+      "id": "S05-01-bed-intrusion"
+    },
+    {
+      "baseline": {
+        "case_digest": "20ca36cc3145456f622c82c3de0ac1b7052a9dcd16d9ac1b0faf380cb21a0918",
+        "first_violation_s": null,
+        "id": "S05-02-more-width",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "9d019dfa9e4165da3d0dbe7d3c30098dbc94b397a46790552bb214750849aee5",
+        "target_fraction_cut": 0.3356610800744879,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.209732196986299,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.8592000000000001,
+          "target_cut_m2": 0.2884,
+          "target_fraction_cut": 0.3356610800744879,
+          "unique_cut_m2": 0.9603
+        }
+      },
+      "candidate": {
+        "case_digest": "20ca36cc3145456f622c82c3de0ac1b7052a9dcd16d9ac1b0faf380cb21a0918",
+        "first_violation_s": null,
+        "id": "S05-02-more-width",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "32f0fc48250c2cd78c137d0949c9797e589f6621c936c9b0ce647a07744a2536",
+        "target_fraction_cut": 0.4235335195530726,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.7421353146459575,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.8592000000000001,
+          "target_cut_m2": 0.3639,
+          "target_fraction_cut": 0.4235335195530726,
+          "unique_cut_m2": 1.109
+        }
+      },
+      "id": "S05-02-more-width"
+    },
+    {
+      "baseline": {
+        "case_digest": "e2409c0c6f6e19752a2962a5ed0807574db261f2a376693f871590481f4edec6",
+        "first_violation_s": null,
+        "id": "S05-03-asymmetric-bed",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "65ed1da4eefb43ddf6228af1bb671a065f13669fd6c54936b9978a5cae396bd9",
+        "target_fraction_cut": 0.4674576271186441,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.2171888773609085,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.885,
+          "target_cut_m2": 0.4137,
+          "target_fraction_cut": 0.4674576271186441,
+          "unique_cut_m2": 0.9629000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "e2409c0c6f6e19752a2962a5ed0807574db261f2a376693f871590481f4edec6",
+        "first_violation_s": null,
+        "id": "S05-03-asymmetric-bed",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "e5f60cb2b6f2f490cae262b8d1f5389bb1cf40780bff35c134812510826c1fbb",
+        "target_fraction_cut": 0.5755932203389831,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.2858395307440484,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.885,
+          "target_cut_m2": 0.5094000000000001,
+          "target_fraction_cut": 0.5755932203389831,
+          "unique_cut_m2": 0.9827
+        }
+      },
+      "id": "S05-03-asymmetric-bed"
+    },
+    {
+      "baseline": {
+        "case_digest": "58baab15e19c4151f2e556c61896abe97732972ef15f592a31fa16763b3a2d5a",
+        "first_violation_s": null,
+        "id": "S05-04-end-clearance",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "6562a131f3ff367d4866538ce354621fa5274ea6abb79ef716ded6a77374cedf",
+        "target_fraction_cut": 1.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.05,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.9156000000000001,
+          "target_fraction_cut": 1.0,
+          "unique_cut_m2": 0.9156000000000001
+        }
+      },
+      "candidate": {
+        "case_digest": "58baab15e19c4151f2e556c61896abe97732972ef15f592a31fa16763b3a2d5a",
+        "first_violation_s": null,
+        "id": "S05-04-end-clearance",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "7d712e55d895cf50b65b31157f2cbbf021ccdbd4ccc7335d8d91aa7da21450ab",
+        "target_fraction_cut": 1.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 3.05,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.9156000000000001,
+          "target_cut_m2": 0.9156000000000001,
+          "target_fraction_cut": 1.0,
+          "unique_cut_m2": 0.9156000000000001
+        }
+      },
+      "id": "S05-04-end-clearance"
+    },
+    {
+      "baseline": {
+        "case_digest": "7aae16edbfe489649aeefa6c2576413167fcb0005e1ba4ba2016e0b29bb4ba43",
+        "first_violation_s": null,
+        "id": "S05-05-yard-edge",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "b412dd60c5f4448b7633581c1e3eb192299fc93794e50e6557a26a64a42dc661",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.8231,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "candidate": {
+        "case_digest": "7aae16edbfe489649aeefa6c2576413167fcb0005e1ba4ba2016e0b29bb4ba43",
+        "first_violation_s": null,
+        "id": "S05-05-yard-edge",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "62c8d3b35b69d56be6002f00436050aa7ac06bf7187059dcb478bc185d12cff3",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 0.8231,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "id": "S05-05-yard-edge"
+    },
+    {
+      "baseline": {
+        "case_digest": "446b38e4db3196e5343217f813a098c66da1d9d3e00f5cf0465c924871e3989b",
+        "first_violation_s": null,
+        "id": "S06-01-one-overlap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "2bdbbe5d90d9f577ed6a443773a900773d080f50db671e67230daea7c22425be",
+        "target_fraction_cut": 0.6101946681260261,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 10.398196184912717,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.2104,
+          "repeated_area_m2": 0.2104,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 1.5610000000000002,
+          "target_fraction_cut": 0.6101946681260261,
+          "unique_cut_m2": 2.7616
+        }
+      },
+      "candidate": {
+        "case_digest": "446b38e4db3196e5343217f813a098c66da1d9d3e00f5cf0465c924871e3989b",
+        "first_violation_s": null,
+        "id": "S06-01-one-overlap",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "fbb39c0ad518a1c6133ff533de20af0f5321b9696504757373c775215d8eaa34",
+        "target_fraction_cut": 0.8295285747791415,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 11.829469467159825,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.1437,
+          "repeated_area_m2": 0.1437,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 2.1221,
+          "target_fraction_cut": 0.8295285747791415,
+          "unique_cut_m2": 3.2305
+        }
+      },
+      "id": "S06-01-one-overlap"
+    },
+    {
+      "baseline": {
+        "case_digest": "8651bb209cacc08301c6b25833346147bc8e5d2379d615245f341bd6ac72da88",
+        "first_violation_s": null,
+        "id": "S06-02-larger-obstacle",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "6f18ccbf828c71630dc231c6de132555eee74d95decec29b80813fe84d69e0d8",
+        "target_fraction_cut": 0.5730200922523649,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 10.484165991190755,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.2919,
+          "repeated_area_m2": 0.2919,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 1.4659,
+          "target_fraction_cut": 0.5730200922523649,
+          "unique_cut_m2": 2.7027
+        }
+      },
+      "candidate": {
+        "case_digest": "8651bb209cacc08301c6b25833346147bc8e5d2379d615245f341bd6ac72da88",
+        "first_violation_s": null,
+        "id": "S06-02-larger-obstacle",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "210508605c822457884f107d9e6b87c48727f2a3a8e3c87a5b1d69c3faaeac4f",
+        "target_fraction_cut": 0.7780470643421156,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 11.795872198012265,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.13390000000000002,
+          "repeated_area_m2": 0.13390000000000002,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 1.9904000000000002,
+          "target_fraction_cut": 0.7780470643421156,
+          "unique_cut_m2": 3.2308000000000003
+        }
+      },
+      "id": "S06-02-larger-obstacle"
+    },
+    {
+      "baseline": {
+        "case_digest": "72964c745f9624a069ee1bc64cc6e70796e06d1d34b9bace4db9668614c485ea",
+        "first_violation_s": null,
+        "id": "S06-03-two-obstacles",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "2a989373de1e0faaec055caa49fc6833e01ffc5c44cb5bf04a64851edc8d8b49",
+        "target_fraction_cut": 0.49620827144085683,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 10.482969667037619,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.2609,
+          "repeated_area_m2": 0.2609,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 1.2694,
+          "target_fraction_cut": 0.49620827144085683,
+          "unique_cut_m2": 2.7344
+        }
+      },
+      "candidate": {
+        "case_digest": "72964c745f9624a069ee1bc64cc6e70796e06d1d34b9bace4db9668614c485ea",
+        "first_violation_s": null,
+        "id": "S06-03-two-obstacles",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "4241aff31b54abe2372aa9ec344ed18206413f4bd652abb2f181fa0fa29c3231",
+        "target_fraction_cut": 0.6955281056993199,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 11.536191293326215,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0985,
+          "repeated_area_m2": 0.0985,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 1.7793,
+          "target_fraction_cut": 0.6955281056993199,
+          "unique_cut_m2": 3.1927000000000003
+        }
+      },
+      "id": "S06-03-two-obstacles"
+    },
+    {
+      "baseline": {
+        "case_digest": "de7a73660fa85ec27014e6a2c468e2a2b5f3cbd78bed5ac2e6dcc9e9432e6a49",
+        "first_violation_s": null,
+        "id": "S06-04-tight-runtime",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "e48b83afe401de5deb339e401302b2e97295340f482ffc26cce23ea3da28e295",
+        "target_fraction_cut": 0.615237276209835,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 10.398196927827971,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.2084,
+          "repeated_area_m2": 0.2084,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 1.5739,
+          "target_fraction_cut": 0.615237276209835,
+          "unique_cut_m2": 2.7632000000000003
+        }
+      },
+      "candidate": {
+        "case_digest": "de7a73660fa85ec27014e6a2c468e2a2b5f3cbd78bed5ac2e6dcc9e9432e6a49",
+        "first_violation_s": null,
+        "id": "S06-04-tight-runtime",
+        "outcome": "COMPLETED",
+        "passed": true,
+        "state_id": "0bb27ec9f17221194af8625d952e4c1221098fa86cadaf4961c7da7c79814a51",
+        "target_fraction_cut": 0.8261668360566023,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 11.460501904202625,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.09330000000000001,
+          "repeated_area_m2": 0.09330000000000001,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 2.1135,
+          "target_fraction_cut": 0.8261668360566023,
+          "unique_cut_m2": 3.1777
+        }
+      },
+      "id": "S06-04-tight-runtime"
+    },
+    {
+      "baseline": {
+        "case_digest": "6e3d01c727423e63133e9e7fa68d03edf4984b58dd288854156fde42181c6462",
+        "first_violation_s": null,
+        "id": "S06-05-short-budget",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "83e02b694b8611bbf36d49b61ac554c7b5c0161544a0463c49e1e3cd21420070",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "candidate": {
+        "case_digest": "6e3d01c727423e63133e9e7fa68d03edf4984b58dd288854156fde42181c6462",
+        "first_violation_s": null,
+        "id": "S06-05-short-budget",
+        "outcome": "SAFE_REJECTION",
+        "passed": true,
+        "state_id": "cf0dc35cf1d29833f45346f627a5394e819bc91e536094ff8be3f970a0d60ae7",
+        "target_fraction_cut": 0.0,
+        "metrics": {
+          "cell_m": 0.01,
+          "distance_m": 0.0,
+          "evaluator_version": "1",
+          "extra_visit_area_m2": 0.0,
+          "repeated_area_m2": 0.0,
+          "target_area_m2": 2.5582000000000003,
+          "target_cut_m2": 0.0,
+          "target_fraction_cut": 0.0,
+          "unique_cut_m2": 0.0
+        }
+      },
+      "id": "S06-05-short-budget"
+    }
+  ],
+  "local_artifacts": {
+    "suite_comparison": {
+      "file": "release-local/comparison.json",
+      "sha256": "dd6ff50cb44235e5955e25d43b7dc8cbbc86b850bacfe57bbc433822e60d2d15"
+    },
+    "pre_fix_verdict": {
+      "file": "legacy-joint/episodes/S01-01-thin-diagonal/verdict.json",
+      "sha256": "75314aeb6033b51eee4e826e8af29b9007c0bf7b512826be3fb1c919137358bc"
+    },
+    "failure_window": {
+      "file": "failure-s01-before-fix-v2/window.json",
+      "sha256": "ebdf468ba8bb85e1cd1f7d63e53ced52d020afac60100b89f742c7a278fbb490"
+    },
+    "convergence": {
+      "file": "convergence-s01.json",
+      "sha256": "e44b7a5dbd7ec413ce4c7348fc141477c619c949d3e2b79c71aa1881a4ed984f"
+    },
+    "profile": {
+      "file": "profile-s06.json",
+      "sha256": "0cd372f6b7b91105fd696c79faf664323df9d60097f8c79743ce534ca40afea3"
+    }
+  },
+  "verification": {
+    "legacy": {
+      "passed": 132,
+      "file": "release-tests-legacy.log",
+      "sha256": "6f0a0bc586d2fce9e2fe132ea974cf65ba1819f60767feb3d153cc0bcd7930d4"
+    },
+    "cases": {
+      "passed": 52,
+      "file": "release-tests-cases.log",
+      "sha256": "094c7aad7a0050d304a2088f0ebcf623dd77af690b88d5c6252e9cdeb13f210d"
+    },
+    "cpu_ci_smoke": {
+      "passed": 6,
+      "hosted_execution": "pending"
+    }
+  }
+}
