@@ -1,46 +1,48 @@
 # Mower POV
 
-用程序生成割草机器人固定机载视角。任务 0–4 已实现 40 秒庭院路线、地形草根、刀盘状态、轮迹、固定外参、事件与可乱序读取的作业缓存。
+面向家庭后院的割草机器人仿真。固定机载相机记录作业过程，草高和轮迹随作业保存，静态困难场景可批量复测。
 
-运行方式见 [README](README.md)，实测环境和数据契约见 [复现说明](docs/reproducibility.md)，渲染阶段见 [实施计划](docs/implementation-plan.md)。
+[English](README.md)
 
-任务 5–6 的本地输出在 `runs/phase-5-6/`。主样片是 `mower-pov-preview-8s.mp4`，
-关键帧位于 `keyframes/`，连续画面和降噪对照位于 `review/`。
-[视觉审查](docs/artistic-review.md)记录了可见的短草带、当前画质限制和后续验收门槛。
+## 观看 104 秒机载成片
 
-庭院打磨版使用 `beauty` 预设，在 `runs/garden-polish/delivery/` 生成 720p 样片。
-运行方式与视觉变化见[庭院打磨记录](docs/artistic-review.md#庭院打磨版)。
+https://github.com/user-attachments/assets/939a06dc-019f-4a18-ab2f-4dfc0f027b0c
 
-## 午后庭院
+五行往返、四次掉头。割草机绕过软管、彩球和浇水壶，返程时可以看到前一趟留下的短草带。
 
-主片企划为 40 秒，固定机载视角，远处的小狗与滚球位于矮栏另一侧，
-刺猬从草间退入矮灌木。返程仍展示作业缓存中留下的短草带。
-18 秒花絮用四个独立镜头呈现刺猬、小狗、蹦床和割后草地。
-[制作与复现说明](docs/production.md)列出实际使用的命令和交付位置。
+[1080p 原片与校验和](https://github.com/ros-claw/mower-pov/releases/tag/demo%2Fcoverage-104s) · [成片版本与复现](docs/releases/v0.1.0-demo.md)
 
-## 家庭后院写实度修订
+## 用 CPU 跑静态案例
 
-首轮本地修订加入了犬代理的脚掌接触、近景逐叶截断和可选的砖房露台。基线对照、短片、
-资产许可、实测接触数据和当前验收范围见[修订记录](docs/realism-revision.md)。
+静态套件有 30 个合成案例，覆盖细软管、掉头区障碍、玩具窄通道、蹦床支架、花坛与边界、漏割与重访六类情况。判定器从实际轨迹独立检查车身连续扫掠、运动限制、刀盘状态和首次割草时间。需要看失败过程时，可用 Blender 渲染该时间段。
 
-## 动态后院
+从仓库根目录运行，使用 Python 3.11、`uv` 和锁定依赖。
 
-`configs/backyard-dynamic.toml` 生成可重放的 40 秒时间线。机器在小狗横穿和刺猬停留时
-减速并关闭刀盘指令，持续确认通道空出后重启，然后掉头经过原先割短的草带。
-场景的真值几何驱动避障。静止刺猬和玩具绕行另有独立配置。
+```sh
+uv venv --python 3.11
+uv pip install -r requirements-lock.txt
+uv pip install --no-deps -e .
+.venv/bin/python -m mower_pov cases validate scenarios/suites/static-v1.json
+.venv/bin/python -m mower_pov cases run scenarios/suites/static-smoke-v1.json \
+  --policy legacy-joint --out runs/static-smoke
+```
 
-三段机载样片、主片、状态日志和断点恢复命令见[动态后院制作说明](docs/dynamic-production.md)。
-短毛犬的可再分发资产与 Blender 脚掌测量见[犬只绑定说明](docs/dog-rig.zh-CN.md)。
+预检运行六个案例，输出 `runs/static-smoke/summary.json` 及逐例判定和证据清单。把运行命令中的配置换成 `static-v1.json` 即可跑全部 30 例。工具还支持断点恢复、策略对照和带绝对时间的失败短片。[案例使用与提交手册](docs/cases/ADDING_CASES.md)
 
-## 多行割草与家庭障碍
+## 本地对照结果
 
-`configs/mowing-course.toml` 是 104 秒连续作业。五条交替方向的作业行由四次机载回转连接，
-往返时可多次复查先前的短草。软管、球、浇水壶占据作业区。规划器比较局部绕行候选，
-按底盘轮廓和连续扫掠净距筛选，再联合选择五行。刀盘扫掠的新增面积、重复面积和
-时间预算参与评分。接近障碍时限速，通过后回接原行。
-[制作与回放命令](docs/dynamic-production.md#割草作业区成片)。
+| 评测范围 | 逐行规划 | 联合覆盖规划 |
+| --- | ---: | ---: |
+| 104 秒演示的五行目标区覆盖率（4.2264 m²） | 72.30% | 85.68% |
+| 24 个配对可行案例的面积加权覆盖率 | 61.49% | 79.82% |
+| 上述 24 个案例的累计重访面积 | 1.3416 m² | 0.6798 m² |
 
-## 静态困难场景回归
+两套策略均完成了 24 个可行案例，并对 6 个有独立不可行证明的案例安全拒绝。联合覆盖在四个掉头球案例中覆盖率有所下降。静态评测使用已知障碍几何和运动学模型。[指标口径与逐例结果](docs/cases/static-v1-results.zh-CN.md) · [机器可读证据](evidence/v0.2/static-v1-results.json)
 
-二期静态回归覆盖六个场景族、30 个固定种子案例。逐行策略和联合覆盖策略从同一份已知地图规划，独立判定器检查实际轨迹与首割记录。批跑只需 CPU，失败轨迹可选用 Blender 制作短片。
-[案例手册](docs/cases/ADDING_CASES.md) · [本地验收结果](docs/cases/static-v1-results.zh-CN.md)
+## 复现作业与成片
+
+- [104 秒成片制作流程](docs/dynamic-production.md#割草作业区成片)，包括作业缓存、Blender/Cycles 渲染、断点恢复与音轨合成。
+- [一期复现证据](evidence/v0.1/reproduction.md)，说明如何从成片与对照提交重建作业缓存并比较覆盖。
+- [40 秒动态后院重放](docs/dynamic-production.md)，单独展示小狗横穿与刺猬等待。
+
+源码采用 GPL-3.0-or-later。[代码许可](LICENSE) · [第三方资产归属](THIRD_PARTY_NOTICES.md)

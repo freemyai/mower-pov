@@ -1,61 +1,48 @@
 # Mower POV
 
-A deterministic work-state pipeline for a robot-mounted mower camera. Phase 0–4 implements
-the 40-second route, terrain, cutting and wheel paths, fixed camera, events, and replay bundle.
+A robotic mower simulation with persistent grass cutting, a fixed onboard camera, and reproducible static corner cases.
 
-Use Python 3.11 or later. Blender is needed for the Cycles environment check.
+[简体中文](README.zh-CN.md)
+
+## Watch the 104-second onboard film
+
+https://github.com/user-attachments/assets/939a06dc-019f-4a18-ab2f-4dfc0f027b0c
+
+Five passes and four turns bring the previous cut bands back into view. The mower slows down and routes around a garden hose, a ball, and a watering can.
+
+[1080p original and checksum](https://github.com/ros-claw/mower-pov/releases/tag/demo%2Fcoverage-104s) · [Film provenance and reproduction](docs/releases/v0.1.0-demo.md)
+
+## Run a case on CPU
+
+The static suite has 30 synthetic cases across six families, including a thin hose, an obstacle near a turn, a narrow passage, trampoline supports, a flower bed, and overlapping passes. The evaluator checks the recorded chassis sweep, motion limits, blade state, and first-cut times independently of the planner. Blender is optional for replaying a failure on video.
+
+From the repository root, use Python 3.11, `uv`, and the locked dependencies.
 
 ```sh
 uv venv --python 3.11
-uv pip install -e '.[dev]'
-.venv/bin/python -m pytest -q
-.venv/bin/python -m mower_pov doctor --blender /path/to/blender --device OPTIX --output runs/phase-0-4/environment.json
-.venv/bin/python -m mower_pov prepare --environment runs/phase-0-4/environment.json --diagnostics runs/phase-0-4
+uv pip install -r requirements-lock.txt
+uv pip install --no-deps -e .
+.venv/bin/python -m mower_pov cases validate scenarios/suites/static-v1.json
+.venv/bin/python -m mower_pov cases run scenarios/suites/static-smoke-v1.json \
+  --policy legacy-joint --out runs/static-smoke
 ```
 
-Select `--device CPU` for a CPU smoke check. The simulation runs with `prepare` even
-when a Cycles installation is unavailable. See [reproducibility](docs/reproducibility.md)
-for the verified installation and bundle format.
+The quick run evaluates six cases and writes `runs/static-smoke/summary.json` plus a verdict and evidence manifest for each case. Use `static-v1.json` in the run command for all 30. The project also supports batch resume, policy comparison, and failure clips with absolute time overlays. [Case guide](docs/cases/ADDING_CASES.md)
 
-Source code is GPL-3.0-or-later. See [LICENSE](LICENSE) and
-[third-party notices](THIRD_PARTY_NOTICES.md).
+## Local benchmark results
 
-## Blender review clip
+| Evaluation | Sequential planning | Joint coverage planning |
+| --- | ---: | ---: |
+| 104-second film coverage on the 4.2264 m² target | 72.30% | 85.68% |
+| 24 paired feasible cases, area-weighted coverage | 61.49% | 79.82% |
+| Revisited area across those 24 cases | 1.3416 m² | 0.6798 m² |
 
-The review clip uses absolute frames 525–764 of the default 40-second run. Use the pinned
-Blender executable and FFmpeg with libx264 and zscale.
+Both policies completed 24 cases and safely rejected six cases with an independent infeasibility certificate. Coverage decreased in four of the ball-near-turn cases. The static suite uses known obstacle geometry and a kinematic model. [Method and per-case results](docs/cases/static-v1-results.zh-CN.md) · [Machine-readable evidence](evidence/v0.2/static-v1-results.json)
 
-```sh
-run="$(awk '{print $2}' runs/phase-0-4/prepare.txt)"
-scripts/render_review.sh "$run" /path/to/blender runs/backyard-review OPTIX
-```
+## Reproduce the work and the film
 
-The command writes the 8-second MP4, seven keyframes, multilayer linear EXRs, raw and OIDN
-comparisons, and render measurements. Set the last argument to `OPTIX4` for four discrete
-OptiX devices or `CPU` for an explicitly selected CPU run. An individual frame can be
-rendered with `python -m mower_pov render --help`. See the [visual review](docs/artistic-review.md)
-and [measured render timings](docs/benchmarks.md).
+- [104-second production recipe](docs/dynamic-production.md#割草作业区成片) for the immutable work cache, Blender/Cycles rendering, rendering resume, and audio.
+- [Reproduction notes](evidence/v0.1/reproduction.md) for rebuilding the work bundles from the film and baseline commits and comparing coverage.
+- [Dynamic backyard replay](docs/dynamic-production.md) for the separate 40-second scene with a crossing dog and a waiting hedgehog.
 
-Set `MOWER_REVIEW_PRESET=beauty` for the 720p garden polish covering the same timeline,
-with a fixed lens focus and side-by-side crop comparisons.
-
-## Local feature production
-
-The feature uses the onboard view with the procedural yard animals. A separate four-shot
-garden montage includes the trampoline and child animation. See [production](docs/production.md)
-for the commands, artifact paths, and review status.
-
-## Dynamic backyard
-
-`configs/backyard-dynamic.toml` records a 40-second fixed-camera scenario with a crossing dog,
-a waiting hedgehog, a separately modeled blade rotor, and a return over the cut swath.
-It uses scene truth for obstacle occupancy. See the [production guide](docs/dynamic-production.md)
-and [dog asset and contact measurements](docs/dog-rig.zh-CN.md).
-
-## Static mowing corner cases
-
-The static development suite runs 30 fixed-seed scenarios across six families.
-The runner compares sequential and joint planning on the same known geometry.
-A separate evaluator checks continuous chassis clearance, the actual trajectory,
-and persistent cutting state. Numeric batches run on CPU. Blender can replay
-a recorded failure window. See the [case guide](docs/cases/ADDING_CASES.md).
+Source code is GPL-3.0-or-later. [License](LICENSE) · [Third-party assets](THIRD_PARTY_NOTICES.md)
