@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mower POV static scenario schema v1",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9-]{0,63}$"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807
+    },
+    "mode": {
+      "const": "offline_plan_replay"
+    },
+    "fidelity": {
+      "const": "kinematic-geometric"
+    },
+    "units": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "const": "m"
+        },
+        "time": {
+          "const": "s"
+        },
+        "angle": {
+          "const": "rad"
+        }
+      },
+      "required": [
+        "length",
+        "time",
+        "angle"
+      ],
+      "additionalProperties": false
+    },
+    "frame": {
+      "const": "right-handed-z-up"
+    },
+    "robot": {
+      "type": "object",
+      "properties": {
+        "length_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "width_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "track_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "blade_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "max_speed_mps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "max_accel_mps2": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "max_omega_radps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        },
+        "max_alpha_radps2": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        }
+      },
+      "required": [
+        "length_m",
+        "width_m",
+        "track_m",
+        "blade_radius_m",
+        "max_speed_mps",
+        "max_accel_mps2",
+        "max_omega_radps",
+        "max_alpha_radps2"
+      ],
+      "additionalProperties": false
+    },
+    "world": {
+      "type": "object",
+      "properties": {
+        "width_m": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 30
+        },
+        "depth_m": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 30
+        },
+        "step_hz": {
+          "const": 240
+        },
+        "cell_m": {
+          "type": "number",
+          "minimum": 0.002,
+          "maximum": 0.1
+        },
+        "x_limits_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -40,
+            "maximum": 40
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "row_y_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -40,
+            "maximum": 40
+          },
+          "minItems": 1,
+          "maxItems": 10
+        },
+        "obstacles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9-]{0,63}$"
+              },
+              "type": {
+                "enum": [
+                  "disc",
+                  "polyline_sweep"
+                ]
+              },
+              "points_xy_m": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": -40,
+                    "maximum": 40
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "minItems": 1,
+                "maxItems": 100
+              },
+              "radius_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 5
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "points_xy_m",
+              "radius_m"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "flower_bed_xyxy_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -40,
+            "maximum": 40
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "clearance_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.5
+        }
+      },
+      "required": [
+        "width_m",
+        "depth_m",
+        "step_hz",
+        "cell_m",
+        "x_limits_m",
+        "row_y_m",
+        "obstacles"
+      ],
+      "additionalProperties": false
+    },
+    "actors": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "faults": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "observation": {
+      "type": "object",
+      "properties": {
+        "provider": {
+          "const": "known_static_geometry"
+        }
+      },
+      "required": [
+        "provider"
+      ],
+      "additionalProperties": false
+    },
+    "termination": {
+      "type": "object",
+      "properties": {
+        "max_sim_time_s": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        }
+      },
+      "required": [
+        "max_sim_time_s"
+      ],
+      "additionalProperties": false
+    },
+    "expected": {
+      "type": "object",
+      "properties": {
+        "outcome": {
+          "enum": [
+            "COMPLETED",
+            "SAFE_REJECTION"
+          ]
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "additionalProperties": false
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "enum": [
+              "continuous_body_clearance",
+              "no_boundary_violation",
+              "no_cutting_when_rotor_inactive",
+              "no_obstacles_removed_to_enable_success",
+              "kinematic_limits",
+              "complete_static_work",
+              "minimum_target_coverage"
+            ]
+          },
+          "minimum_m": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 0.5
+          },
+          "minimum_fraction": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 7
+    },
+    "assets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "yard-house"
+        ]
+      }
+    },
+    "camera": {
+      "type": "object",
+      "properties": {
+        "mount_xyz_m": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "minimum": -2,
+            "maximum": 2
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "hfov_deg": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 179
+        },
+        "pitch_deg": {
+          "type": "number",
+          "minimum": -89,
+          "maximum": 89
+        }
+      },
+      "required": [
+        "mount_xyz_m",
+        "hfov_deg",
+        "pitch_deg"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "id",
+    "seed",
+    "mode",
+    "fidelity",
+    "units",
+    "frame",
+    "robot",
+    "world",
+    "actors",
+    "faults",
+    "observation",
+    "termination",
+    "expected",
+    "assertions"
+  ],
+  "additionalProperties": false
+}
