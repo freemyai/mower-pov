@@ -40,3 +40,12 @@ def test_reject_overflow_and_bad_units(scenario, write_scenario):
     scenario["units"]["length"] = "cm"
     with pytest.raises(ValueError, match="units"):
         load_spec(write_scenario(scenario))
+
+
+def test_integral_numeric_fields_are_normalized_for_cache(scenario, write_scenario):
+    scenario["version"] = 1.0
+    scenario["seed"] = 42.0
+    scenario["world"]["step_hz"] = 240.0
+    scenario["termination"]["max_sim_time_s"] = 75.0
+    case = load_spec(write_scenario(scenario)).case
+    assert all(type(x) is int for x in (case.version, case.seed, case.world.step_hz, case.duration_s))

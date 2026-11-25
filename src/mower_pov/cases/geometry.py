@@ -2,6 +2,8 @@
 
 import numpy as np
 
+WAYPOINT_TOL_M = .015
+
 
 def _local_points(points, centres, yaw):
     offset = np.asarray(points)[None, :, :] - centres[:, None, :]
@@ -71,26 +73,30 @@ def mission_impossibility(case):
     """Sufficient certificates only. Search failure alone proves no impossibility."""
     world, robot = case.world, case.robot
     x0, x1 = world.x_limits_m
-    if len(world.row_y_m) * (x1 - x0) > case.duration_s * robot.max_speed_mps:
+    if len(world.row_y_m) * max(0., x1 - x0 - 2 * WAYPOINT_TOL_M) > case.duration_s * robot.max_speed_mps:
         return "mandatory row displacement exceeds the time budget at maximum speed"
     size = robot.length_m, robot.width_m
+    inside = min(size) / 2
     required = np.array([(x, y) for y in world.row_y_m for x in (x0, x1)])
-    yaw = np.zeros(len(required))  # yaw 0 or pi has the same rectangular footprint
-    if np.any(abs(required) + np.asarray(size) / 2 > np.array([world.width_m, world.depth_m]) / 2):
+    if np.any(abs(required) + inside - WAYPOINT_TOL_M > np.array([world.width_m, world.depth_m]) / 2):
         return "mandatory lane endpoint cannot fit inside the yard"
+    # Any orientation contains the inscribed disc. Allow the entire accepted
+    # waypoint neighbourhood when proving an endpoint cannot be visited.
+    yaw = np.zeros(len(required))
+    forbidden = inside + world.clearance_m - WAYPOINT_TOL_M
     for item in world.obstacles:
-        if np.any(obstacle_distance(required, yaw, size, item) < world.clearance_m):
+        if np.any(obstacle_distance(required, yaw, (0., 0.), item) < forbidden):
             return f"mandatory lane endpoint conflicts with {item.id}"
     if world.flower_bed_xyxy_m is not None:
-        if np.any(bed_distance(required, yaw, size, world.flower_bed_xyxy_m) < max(world.clearance_m, 1e-9)):
+        if np.any(bed_distance(required, yaw, (0., 0.), world.flower_bed_xyxy_m) < forbidden):
             return "mandatory lane endpoint conflicts with the flower bed"
 
-    inside = min(size) / 2
     radius = inside + world.clearance_m
     low, high = -world.depth_m / 2 + inside, world.depth_m / 2 - inside
     # A vertical slice forbidden throughout the feasible centre domain separates
     # both required lane endpoints even when the chassis changes its orientation.
-    slices = sorted({x for item in world.obstacles for x, _ in item.points_xy_m if x0 < x < x1})
+    slices = sorted({x for item in world.obstacles for x, _ in item.points_xy_m
+                     if x0 + WAYPOINT_TOL_M < x < x1 - WAYPOINT_TOL_M})
     for x in slices:
         spans = []
         for item in world.obstacles:

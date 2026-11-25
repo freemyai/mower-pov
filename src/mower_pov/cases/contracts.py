@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from ..contracts import CameraConfig
 
+STATIC_CUT_HEIGHT_M = .045
+
 
 @dataclass(frozen=True)
 class RobotSpec:

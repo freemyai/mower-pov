@@ -152,8 +152,12 @@ def render_frames(request: RenderRequest) -> RenderResult:
     from .life_motion import require_life_layout
 
     state = load_bundle(request.run_dir)
-    require_life_layout(state)
     config = state.resolved_config
+    if config.scenario == "static-case":
+        if (request.view, request.yard) != ("onboard", "legacy"):
+            raise ValueError("static case rendering requires its recorded geometry and onboard view")
+    else:
+        require_life_layout(state)
     frames = request.frame_indices
     if not frames or any(type(i) is not int or not 0 <= i < config.frame_count for i in frames):
         raise ValueError("frame indices are outside the absolute timeline")

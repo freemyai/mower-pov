@@ -69,11 +69,17 @@ def _row_geometry(x, y, eastbound):
     return xy, s, yaw, curvature
 
 
-def _profile(s, curvature, obstacle_margin, mower):
+def _profile(s, curvature, obstacle_margin, mower, *, yaw=None):
     magnitude = np.abs(curvature)
     # Use both neighbors so the bound covers interpolation along each source chord.
     slope = np.maximum.reduce((magnitude, np.r_[magnitude[0], magnitude[:-1]],
                                np.r_[magnitude[1:], magnitude[-1]]))
+    if yaw is not None:
+        # The executor interpolates heading linearly in arclength. Bound the
+        # slope of each actual interpolant at both velocity knots of its chord.
+        chord_slope = abs(np.diff(yaw) / np.diff(s))
+        slope = np.maximum.reduce((slope, np.r_[chord_slope[0], chord_slope],
+                                   np.r_[chord_slope, chord_slope[-1]]))
     segment_change = np.abs(np.diff(curvature) / np.diff(s))
     change = np.maximum(np.r_[segment_change[0], segment_change],
                         np.r_[segment_change, segment_change[-1]])
@@ -229,7 +235,8 @@ def _row_candidates(config, grid, x, lane_y, eastbound, layout):
         clearance = _candidate_clearance(xy, yaw, config, bounds, planning_clearance, layout.yard_context)
         if clearance is None:
             continue
-        speed, times = _profile(s, curvature, clearance, config.mower)
+        speed, times = _profile(s, curvature, clearance, config.mower,
+                                yaw=None if layout.yard_context else yaw)
         mask = grid.footprint(xy, yaw)
         former = unique.get(mask)
         if former is None or times[-1] < former.duration:
@@ -326,7 +333,8 @@ def _evaluate_row(row, seconds, layout):
     yaw = np.interp(s, row.s, row.yaw)
     omega = v * np.interp(s, row.s, row.curvature)
     modes = np.full(len(s), "MOW", dtype="U8")
-    names = np.full(len(s), "", dtype="U12")
+    width = max([12, *(len(name) for name in row.nominal_blockers)])
+    names = np.full(len(s), "", dtype=f"U{width}")
     if row.bypass_x is not None:
         start, entry, exit, stop = row.bypass_x
         x = xy[:, 0]

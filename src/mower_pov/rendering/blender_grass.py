@@ -294,7 +294,7 @@ def make_grass(scene, bundle):
     wheel_times = np.r_[state.wheel_contact_time_s[:, 0], state.wheel_contact_time_s[-1, 1]]
     wheel_points = np.concatenate((state.wheel_contact_xy_m[:, :, 0],
                                    state.wheel_contact_xy_m[-1:, :, 1]))
-    actors = None if bundle.story is None else tuple(
+    actors = None if bundle.story is None or not len(bundle.story.tracks) else tuple(
         story_track(bundle, name) for name in ("dog", "hedgehog"))
     props = np.zeros(0) if actors is None else _prop_pressure(xyz[:, :2], bundle.resolved_config.scenario)
     return GrassReplay(mesh, xyz[:, :2], roots.h0_m, state.root_first_cut_s, state.cut_height_m,

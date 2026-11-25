@@ -63,3 +63,10 @@ def test_current_policy_cannot_win_by_deleting_obstacles(simple_case):
 
 def obstacle_from_suite():
     return validate_suite(load_suite(LIST))[0].world.obstacles[0]
+
+
+def test_joint_hose_detour_limits_actual_yaw_rate():
+    case = validate_suite(load_suite(LIST))[0]
+    verdict = evaluate_episode(case, run_offline(case, LegacyPlanner("legacy-joint")))
+    check = next(item for item in verdict.assertions if item.name == "kinematic_limits")
+    assert check.status == "PASS", check

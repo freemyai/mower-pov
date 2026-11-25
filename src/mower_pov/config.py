@@ -92,7 +92,7 @@ def validate_config(config: RunConfig) -> None:
     conditions = {
         "seed": type(config.seed) is int and config.seed >= 0,
         "scenario": config.scenario in {"legacy", "backyard-story", "hedgehog-stays", "toy-detour",
-                                        "mowing-course"},
+                                        "mowing-course", "static-case"},
         "world.flower_bed_xyxy_m": x0 < x1 and y0 < y1,
         "world.cell_m": w.cell_m <= min(w.width_m, w.depth_m),
         "world.duration_s": all(math.isclose(w.duration_s * rate, round(w.duration_s * rate),

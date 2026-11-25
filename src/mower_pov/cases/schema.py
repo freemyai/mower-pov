@@ -70,7 +70,7 @@ def _world(data):
     bed = tuple(map(float, data["flower_bed_xyxy_m"])) if "flower_bed_xyxy_m" in data else None
     if bed is not None and not (bed[0] < bed[2] and bed[1] < bed[3]):
         raise ValueError("flower_bed_xyxy_m must describe a positive-area rectangle")
-    return WorldSpec(width, depth, data["step_hz"], float(data["cell_m"]), (x0, x1), rows,
+    return WorldSpec(width, depth, int(data["step_hz"]), float(data["cell_m"]), (x0, x1), rows,
                      _obstacles(data["obstacles"]), bed, float(data.get("clearance_m", .035)))
 
 
@@ -107,9 +107,9 @@ def load_spec(path: Path) -> ScenarioSpec:
         camera = CameraConfig(tuple(map(float, c["mount_xyz_m"])), float(c["hfov_deg"]), float(c["pitch_deg"]))
     u = data["units"]
     return ScenarioSpec(ResolvedCase(
-        data["version"], data["id"], data["seed"], data["mode"], data["fidelity"],
+        int(data["version"]), data["id"], int(data["seed"]), data["mode"], data["fidelity"],
         (u["length"], u["time"], u["angle"]), data["frame"], robot, _world(data["world"]),
-        (), data["observation"]["provider"], (), data["termination"]["max_sim_time_s"],
+        (), data["observation"]["provider"], (), int(data["termination"]["max_sim_time_s"]),
         data["expected"]["outcome"], _assertions(data["assertions"]),
         tuple(sorted(data.get("assets", []))), camera,
     ))

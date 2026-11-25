@@ -54,3 +54,29 @@ def test_inject_wrong_target_denominator(simple_case, simple_trace):
     mask[mask.shape[0]//2, mask.shape[1]//2] = False
     trace = replace(simple_trace, terrain=replace(simple_trace.terrain, mowable_mask=mask))
     assert_failed(simple_case, trace, "target_geometry")
+
+
+def test_obstacle_named_like_flower_bed_still_checks_its_geometry(simple_case, simple_trace):
+    item = ObstacleSpec("flower-bed", "disc", ((0., 0.),), .05)
+    world = replace(simple_case.world, obstacles=(item,), flower_bed_xyxy_m=(1., 1., 2., 1.5))
+    case = replace(simple_case, world=world)
+    assert_failed(case, replace(simple_trace, scenario_id=scenario_digest(case)),
+                  "continuous_body_clearance")
+
+
+def test_uncommanded_rotor_spin_is_rejected(simple_case, simple_trace):
+    story = replace(simple_trace.story, blade_command=np.zeros_like(simple_trace.story.blade_command))
+    assert_failed(simple_case, replace(simple_trace, story=story), "rotor_state")
+
+
+def test_a_supplied_safe_rejection_label_is_not_a_certificate(simple_case, simple_trace):
+    case = replace(simple_case, expected_outcome="SAFE_REJECTION")
+    trace = replace(simple_trace, scenario_id=scenario_digest(case), trajectory=None, status="SAFE_REJECTION")
+    assert_failed(case, trace, "rejection_certificate")
+
+
+def test_pose_motion_cannot_pass_with_stationary_wheels(simple_case, simple_trace):
+    tr = simple_trace.trajectory
+    tampered = replace(tr, v_mps=np.zeros_like(tr.v_mps), wheel_speeds=np.zeros_like(tr.wheel_speeds),
+                       unwrapped_yaw=np.full_like(tr.unwrapped_yaw, np.pi/2))
+    assert_failed(simple_case, replace(simple_trace, trajectory=tampered), "kinematic_limits")

@@ -126,3 +126,28 @@ def trace_sweep(case, trace, resolution=None, *, check_roots=False):
 
 def measure_episode(case, trace):
     return trace_sweep(case, trace)[0]
+
+
+def convergence_report(case, trace, resolutions_m, *, area_tolerance_m2=.01):
+    """Compare rasterized areas, independently of the continuous chassis checks."""
+    from dataclasses import asdict
+
+    levels = tuple(resolutions_m)
+    if (len(levels) < 2 or any(not np.isfinite(x) or not .002 <= x <= .1 for x in levels)
+            or any(a <= b for a, b in zip(levels, levels[1:]))):
+        raise ValueError("resolutions must decrease strictly from coarse to fine within v1 limits")
+    if not np.isfinite(area_tolerance_m2) or area_tolerance_m2 <= 0:
+        raise ValueError("area tolerance must be finite and positive")
+    finest = levels[-1]
+    if case.world.width_m * case.world.depth_m / finest**2 > 8_000_000:
+        raise ValueError("fine raster exceeds eight million cells; use a local scenario")
+    measured = [asdict(trace_sweep(case, trace, cell)[0]) for cell in levels]
+    last, before = measured[-1], measured[-2]
+    fields = ("target_area_m2", "target_cut_m2", "unique_cut_m2", "repeated_area_m2", "extra_visit_area_m2")
+    change = {field:abs(last[field] - before[field]) for field in fields}
+    stable = max(change.values()) <= area_tolerance_m2
+    status = "STABLE" if stable else "UNSTABLE"
+    if trace.trajectory is None:
+        status = "NOT_EVALUATED"
+    return {"status":status, "tolerance_m2":area_tolerance_m2, "levels":measured,
+            "last_step_area_change_m2":change, "applies_to":"coverage raster"}

@@ -13,7 +13,7 @@ from ..policies.base import OfflinePlanner, StaticPlanningInput
 from ..policies.legacy import case_config
 from ..terrain import build_terrain, generate_blade_roots
 from .contracts import ResolvedCase
-from .resolve import scenario_digest
+from .resolve import scenario_digest, source_digest
 
 
 @dataclass(frozen=True)
@@ -41,7 +41,7 @@ def run_offline(case: ResolvedCase, planner: OfflinePlanner) -> EpisodeTrace:
     scenario = scenario_digest(case)
     identity = {
         "seed": case.seed, "mode": case.mode, "problem": asdict(problem),
-        "policy": [planner.id, planner.version],
+        "policy": [planner.id, planner.version], "kernel_sha256": source_digest("kernel"),
     }
     result = planner.plan(problem)
     if result.plan is None:

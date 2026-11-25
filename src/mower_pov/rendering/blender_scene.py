@@ -483,20 +483,26 @@ def build_scene(run_dir: str, preset: str, *, yard="legacy", asset_digest=None) 
     soil = material(bpy, "Patchy loam and basal grass", (.080, .104, .035),
                     surface_noise=(11, .23, .029))
     _ground(bpy, bundle, soil)
-    from .blender_life import make_backyard_life
+    if cfg.scenario == "static-case":
+        from .blender_case import make_static_obstacles
 
-    foliage = _garden(bpy, bundle, open_north=yard == "house")
-    if yard == "house":
-        from .blender_house import make_house
+        make_static_obstacles(bpy, bundle)
+        foliage, yard_life = [], None
+    else:
+        from .blender_life import make_backyard_life
 
-        make_house(bpy, bundle, expected_digest=asset_digest)
-    if cfg.scenario == "mowing-course":
-        from .blender_course import make_course_props
+        foliage = _garden(bpy, bundle, open_north=yard == "house")
+        if yard == "house":
+            from .blender_house import make_house
 
-        make_course_props(bpy, bundle)
-    yard_life, shelter = make_backyard_life(bpy, bundle)
-    if shelter is not None:
-        foliage.insert(0, shelter)
+            make_house(bpy, bundle, expected_digest=asset_digest)
+        if cfg.scenario == "mowing-course":
+            from .blender_course import make_course_props
+
+            make_course_props(bpy, bundle)
+        yard_life, shelter = make_backyard_life(bpy, bundle)
+        if shelter is not None:
+            foliage.insert(0, shelter)
     chassis = _vehicle(bpy, scene, cfg)
     camera = mount_camera(scene, cfg)
     if preset in {"beauty", "final"}:

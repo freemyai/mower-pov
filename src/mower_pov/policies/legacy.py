@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 
 import numpy as np
 
+from ..cases.contracts import STATIC_CUT_HEIGHT_M
 from ..contracts import AudioConfig, CameraConfig, GrassConfig, MowerConfig, RenderConfig, RunConfig, WorldConfig
 from ..controller import SPIN_DOWN_S, _smoothstep
 from ..course import (
@@ -27,7 +28,7 @@ def case_config(problem, seed=0, camera=_DEFAULT_CAMERA):
         world=WorldConfig(world.width_m, world.depth_m, float(problem.duration_s), world.step_hz,
                           world.cell_m, world.flower_bed_xyxy_m or outside),
         mower=MowerConfig(**asdict(problem.robot), blade_xy_m=(0., 0.), row_spacing_m=spacing),
-        camera=camera, grass=GrassConfig(.08, .12, .045, 1800),
+        camera=camera, grass=GrassConfig(.08, .12, STATIC_CUT_HEIGHT_M, 1800),
         render=RenderConfig(1920, 1080, 30, "yuv420p", "5.2.4", 28),
         audio=AudioConfig(48000, 2), scenario="mowing-course",
     )
@@ -111,7 +112,8 @@ def _greedy_row(config, layout, x, lane_y, eastbound, previous_rows):
             margin = _candidate_clearance(xy, yaw, config, bounds, clearance, False)
             if margin is None:
                 return None
-        speed, times = _profile(s, curvature, margin, config.mower)
+        speed, times = _profile(s, curvature, margin, config.mower,
+                                yaw=None if layout.yard_context else yaw)
         return Row(xy, s, yaw, curvature, speed, times, offset, blockers, knots, count)
 
     if not blocked.any():

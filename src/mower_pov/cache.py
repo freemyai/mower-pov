@@ -113,6 +113,8 @@ def _record(record_type, arrays, prefix=""):
 def prepare_run(config: RunConfig, base_dir: Path = Path("runs"),
                 environment: Mapping | None = None) -> RunBundle:
     config = config_from_dict(asdict(config))
+    if config.scenario == "static-case":
+        raise ValueError("static case state comes from the cases runner")
     terrain = build_terrain(config)
     story = None
     course_identity = None

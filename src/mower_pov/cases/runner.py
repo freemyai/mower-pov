@@ -15,13 +15,12 @@ import tempfile
 from time import monotonic
 import traceback
 
-from ..cache import _code_identity
 from ..policies.legacy import LegacyPlanner, POLICY_IDS
 from .evaluation import evaluate_episode
 from .evidence import atomic_write, hash_file, save_episode, seal, verify_episode, write_json, write_trace
 from .legacy import run_offline
 from .metrics import EVALUATOR_VERSION
-from .resolve import canonical_digest, resolve_case, scenario_digest
+from .resolve import canonical_digest, resolve_case, scenario_digest, source_digest
 from .schema import load_spec, read_json
 
 _ID = re.compile(r"[A-Za-z][A-Za-z0-9_-]{0,63}")
@@ -110,8 +109,10 @@ def validate_suite(suite):
 
 def _requests(request):
     policy = LegacyPlanner(request.policy_id)
-    sources = {"policy":[policy.id, policy.version], "kernel_sha256":_code_identity(),
-               "evaluator":EVALUATOR_VERSION, "timeout_s":request.timeout_s}
+    sources = {"policy":[policy.id, policy.version], "kernel_sha256":source_digest("kernel"),
+               "judge_sha256":source_digest("judge"), "evaluator":EVALUATOR_VERSION,
+               "runner_sha256":source_digest("runner"),
+               "timeout_s":request.timeout_s}
     cases = []
     for entry in request.suite.cases:
         try:
@@ -260,6 +261,15 @@ def add_case_commands(commands):
     run.add_argument("--no-render", action="store_true", help="compatibility flag; all batch runs are numeric")
     run.add_argument("--jobs", type=int, default=1)
     run.add_argument("--timeout-s", type=float, default=180.)
+    render = actions.add_parser("render", help="render a recorded failure or representative window")
+    render.add_argument("run_dir", type=Path)
+    render.add_argument("case_id")
+    render.add_argument("--out", type=Path, required=True)
+    render.add_argument("--blender", type=Path, default=Path("blender"))
+    render.add_argument("--pad-s", type=float, default=2.)
+    render.add_argument("--at-s", type=float)
+    render.add_argument("--device", choices=("CPU", "OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"), default="CPU")
+    render.add_argument("--preset", choices=("smoke", "preview", "beauty", "final"), default="smoke")
     compare = actions.add_parser("compare")
     compare.add_argument("baseline", type=Path)
     compare.add_argument("candidate", type=Path)
@@ -270,6 +280,13 @@ def case_command(args):
     if args.cases_command == "validate":
         cases = validate_suite(load_suite(args.suite))
         print(f"{len(cases)} valid static scenarios")
+        return 0
+    if args.cases_command == "render":
+        from .render_failure import render_episode_window
+
+        print(render_episode_window(args.run_dir, args.case_id, args.out, args.blender,
+                                    pad_s=args.pad_s, at_s=args.at_s, device=args.device,
+                                    preset=args.preset))
         return 0
     if args.cases_command == "compare":
         comparison = compare_suites(args.baseline, args.candidate)
