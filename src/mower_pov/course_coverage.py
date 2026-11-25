@@ -8,6 +8,7 @@ from itertools import combinations
 import numpy as np
 
 from .controller import SPIN_DOWN_S, SPIN_UP_S
+from .course_layout import COURSE_ROW_Y, COURSE_X_LIMITS
 from .obstacles import distance_to_segment
 from .terrain import grid_to_xy
 
