@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "id": "static-v1",
+  "cases": [
+    {
+      "id": "S01-01-thin-diagonal",
+      "path": "../static/S01-01-thin-diagonal.json"
+    },
+    {
+      "id": "S01-02-thick-reverse",
+      "path": "../static/S01-02-thick-reverse.json"
+    },
+    {
+      "id": "S01-03-curved-hose",
+      "path": "../static/S01-03-curved-hose.json"
+    },
+    {
+      "id": "S01-04-short-end",
+      "path": "../static/S01-04-short-end.json"
+    },
+    {
+      "id": "S01-05-cross-yard",
+      "path": "../static/S01-05-cross-yard.json"
+    },
+    {
+      "id": "S02-01-ball-ahead",
+      "path": "../static/S02-01-ball-ahead.json"
+    },
+    {
+      "id": "S02-02-ball-outside-arc",
+      "path": "../static/S02-02-ball-outside-arc.json"
+    },
+    {
+      "id": "S02-03-large-ball",
+      "path": "../static/S02-03-large-ball.json"
+    },
+    {
+      "id": "S02-04-ball-at-exit",
+      "path": "../static/S02-04-ball-at-exit.json"
+    },
+    {
+      "id": "S02-05-blocked-lane-end",
+      "path": "../static/S02-05-blocked-lane-end.json"
+    },
+    {
+      "id": "S03-01-open-gap",
+      "path": "../static/S03-01-open-gap.json"
+    },
+    {
+      "id": "S03-02-short-gap",
+      "path": "../static/S03-02-short-gap.json"
+    },
+    {
+      "id": "S03-03-small-toy",
+      "path": "../static/S03-03-small-toy.json"
+    },
+    {
+      "id": "S03-04-asymmetric-gap",
+      "path": "../static/S03-04-asymmetric-gap.json"
+    },
+    {
+      "id": "S03-05-closed-gap",
+      "path": "../static/S03-05-closed-gap.json"
+    },
+    {
+      "id": "S04-01-u-frame",
+      "path": "../static/S04-01-u-frame.json"
+    },
+    {
+      "id": "S04-02-wide-legs",
+      "path": "../static/S04-02-wide-legs.json"
+    },
+    {
+      "id": "S04-03-thick-crossbar",
+      "path": "../static/S04-03-thick-crossbar.json"
+    },
+    {
+      "id": "S04-04-off-centre",
+      "path": "../static/S04-04-off-centre.json"
+    },
+    {
+      "id": "S04-05-foot-on-waypoint",
+      "path": "../static/S04-05-foot-on-waypoint.json"
+    },
+    {
+      "id": "S05-01-bed-intrusion",
+      "path": "../static/S05-01-bed-intrusion.json"
+    },
+    {
+      "id": "S05-02-more-width",
+      "path": "../static/S05-02-more-width.json"
+    },
+    {
+      "id": "S05-03-asymmetric-bed",
+      "path": "../static/S05-03-asymmetric-bed.json"
+    },
+    {
+      "id": "S05-04-end-clearance",
+      "path": "../static/S05-04-end-clearance.json"
+    },
+    {
+      "id": "S05-05-yard-edge",
+      "path": "../static/S05-05-yard-edge.json"
+    },
+    {
+      "id": "S06-01-one-overlap",
+      "path": "../static/S06-01-one-overlap.json"
+    },
+    {
+      "id": "S06-02-larger-obstacle",
+      "path": "../static/S06-02-larger-obstacle.json"
+    },
+    {
+      "id": "S06-03-two-obstacles",
+      "path": "../static/S06-03-two-obstacles.json"
+    },
+    {
+      "id": "S06-04-tight-runtime",
+      "path": "../static/S06-04-tight-runtime.json"
+    },
+    {
+      "id": "S06-05-short-budget",
+      "path": "../static/S06-05-short-budget.json"
+    }
+  ]
+}

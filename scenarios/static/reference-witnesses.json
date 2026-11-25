@@ -1,0 +1,176 @@
+{
+  "S01-01-thin-diagonal": {
+    "kind": "routed",
+    "offset_m": [
+      -0.5
+    ]
+  },
+  "S01-02-thick-reverse": {
+    "kind": "routed",
+    "offset_m": [
+      -0.53
+    ]
+  },
+  "S01-03-curved-hose": {
+    "kind": "routed",
+    "offset_m": [
+      -0.52
+    ]
+  },
+  "S01-04-short-end": {
+    "kind": "routed",
+    "offset_m": [
+      -0.54
+    ]
+  },
+  "S01-05-cross-yard": {
+    "kind": "impossibility"
+  },
+  "S02-01-ball-ahead": {
+    "kind": "routed",
+    "offset_m": [
+      0,
+      0
+    ]
+  },
+  "S02-02-ball-outside-arc": {
+    "kind": "routed",
+    "offset_m": [
+      0,
+      0
+    ]
+  },
+  "S02-03-large-ball": {
+    "kind": "routed",
+    "offset_m": [
+      0,
+      0
+    ]
+  },
+  "S02-04-ball-at-exit": {
+    "kind": "routed",
+    "offset_m": [
+      0,
+      0
+    ]
+  },
+  "S02-05-blocked-lane-end": {
+    "kind": "impossibility"
+  },
+  "S03-01-open-gap": {
+    "kind": "routed",
+    "offset_m": [
+      0.41
+    ]
+  },
+  "S03-02-short-gap": {
+    "kind": "routed",
+    "offset_m": [
+      0.45
+    ]
+  },
+  "S03-03-small-toy": {
+    "kind": "routed",
+    "offset_m": [
+      0.41
+    ]
+  },
+  "S03-04-asymmetric-gap": {
+    "kind": "routed",
+    "offset_m": [
+      0.47
+    ]
+  },
+  "S03-05-closed-gap": {
+    "kind": "impossibility"
+  },
+  "S04-01-u-frame": {
+    "kind": "routed",
+    "offset_m": [
+      -0.47
+    ]
+  },
+  "S04-02-wide-legs": {
+    "kind": "routed",
+    "offset_m": [
+      -0.48
+    ]
+  },
+  "S04-03-thick-crossbar": {
+    "kind": "routed",
+    "offset_m": [
+      -0.51
+    ]
+  },
+  "S04-04-off-centre": {
+    "kind": "routed",
+    "offset_m": [
+      -0.48
+    ]
+  },
+  "S04-05-foot-on-waypoint": {
+    "kind": "impossibility"
+  },
+  "S05-01-bed-intrusion": {
+    "kind": "routed",
+    "offset_m": [
+      -0.48
+    ]
+  },
+  "S05-02-more-width": {
+    "kind": "routed",
+    "offset_m": [
+      -0.51
+    ]
+  },
+  "S05-03-asymmetric-bed": {
+    "kind": "routed",
+    "offset_m": [
+      -0.53
+    ]
+  },
+  "S05-04-end-clearance": {
+    "kind": "routed",
+    "offset_m": [
+      0
+    ]
+  },
+  "S05-05-yard-edge": {
+    "kind": "impossibility"
+  },
+  "S06-01-one-overlap": {
+    "kind": "routed",
+    "offset_m": [
+      0.22,
+      -0.45,
+      -0.28
+    ]
+  },
+  "S06-02-larger-obstacle": {
+    "kind": "routed",
+    "offset_m": [
+      0.24,
+      -0.49,
+      -0.3
+    ]
+  },
+  "S06-03-two-obstacles": {
+    "kind": "routed",
+    "offset_m": [
+      0.24,
+      -0.43,
+      -0.27
+    ]
+  },
+  "S06-04-tight-runtime": {
+    "kind": "routed",
+    "offset_m": [
+      0.21,
+      -0.42,
+      -0.27
+    ]
+  },
+  "S06-05-short-budget": {
+    "kind": "impossibility"
+  }
+}

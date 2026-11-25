@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "id": "S04-02-wide-legs",
+  "seed": 20261136,
+  "mode": "offline_plan_replay",
+  "fidelity": "kinematic-geometric",
+  "units": {
+    "length": "m",
+    "time": "s",
+    "angle": "rad"
+  },
+  "frame": "right-handed-z-up",
+  "robot": {
+    "length_m": 0.5,
+    "width_m": 0.42,
+    "track_m": 0.32,
+    "blade_radius_m": 0.14,
+    "max_speed_mps": 0.3,
+    "max_accel_mps2": 0.35,
+    "max_omega_radps": 0.8,
+    "max_alpha_radps2": 1.2
+  },
+  "world": {
+    "width_m": 5.0,
+    "depth_m": 3.0,
+    "step_hz": 240,
+    "cell_m": 0.01,
+    "x_limits_m": [
+      -1.6,
+      1.45
+    ],
+    "row_y_m": [
+      0.45
+    ],
+    "obstacles": [
+      {
+        "id": "trampoline-u",
+        "type": "polyline_sweep",
+        "points_xy_m": [
+          [
+            -0.51,
+            0.89
+          ],
+          [
+            -0.51,
+            0.53
+          ],
+          [
+            0.27,
+            0.53
+          ],
+          [
+            0.27,
+            0.89
+          ]
+        ],
+        "radius_m": 0.03
+      }
+    ]
+  },
+  "actors": [],
+  "faults": [],
+  "observation": {
+    "provider": "known_static_geometry"
+  },
+  "termination": {
+    "max_sim_time_s": 55
+  },
+  "expected": {
+    "outcome": "COMPLETED"
+  },
+  "assertions": [
+    {
+      "name": "continuous_body_clearance",
+      "minimum_m": 0.035
+    },
+    {
+      "name": "no_boundary_violation"
+    },
+    {
+      "name": "no_cutting_when_rotor_inactive"
+    },
+    {
+      "name": "no_obstacles_removed_to_enable_success"
+    },
+    {
+      "name": "kinematic_limits"
+    },
+    {
+      "name": "complete_static_work"
+    }
+  ]
+}
