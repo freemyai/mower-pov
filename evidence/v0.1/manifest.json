@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-25",
+  "release_name": "v0.1.0-demo",
+  "status": "local_frozen",
+  "execution_mode": "offline_plan_replay",
+  "film_commit": "d6300c6ad5ef5f81d8604d671e41936585f48f84",
+  "patched_commit": "3b744cb5b25810b039da4fba92a637d4a943a0f7",
+  "baseline_commit": "f577518db22a1e5b85c6fa9cbf89b92ef8b27d35",
+  "release_commit_reference": "release-manifest.json#release_commit",
+  "initial_checkout": {
+    "branch": "realism-revision",
+    "head": "3b744cb5b25810b039da4fba92a637d4a943a0f7",
+    "untracked": [
+      "docs/mowing-coverage-implementation.zh-CN.md"
+    ]
+  },
+  "source_digest": "e2f55a9435c89a30818f7e481f3b0114907a9daaab9af6d436acd9035c5473dd",
+  "bundle_id": "8f29db798f5d374dcbe85f52c6ec3f1211e1b3e7bc75764abddd8424233690cd",
+  "asset_digest": "92fa93002e1ad12a0b2454a463c388ef5ce412bdeb1b04312e7f242df2daedf6",
+  "media_sha256": "0152c06c0e192dae32e155ef707c0d2f8ae903979948bd6716d659d0957b3b8b",
+  "media": {
+    "duration_s": 104.0,
+    "fps": 30,
+    "frames": 3120,
+    "width": 1920,
+    "height": 1080,
+    "original_render_manifest_sha256": "4b0bf8ebf5fcbd9161aa4f4db6ad14978cca36e33476bbfa83fa5dbf985326fe"
+  },
+  "bundles": {
+    "baseline": {
+      "run_id": "1ccdde09abb8572a9be0ede542daf0c379054f6763475a4c64f76fc20c6d9b36",
+      "source_sha256": "993d74576b9692167ecbc7dc403393f884e40fa71635afbed020fe502aa80469",
+      "original_cache_commit": "43b2a6f7ee2263b0981433f02b7f3b0860f46a77",
+      "original_manifest_sha256": "6fa6e89404b4b1cf9885c6653f42aeab4ae74c78203d0b2a75917b50b11a89d1",
+      "rebuild_manifest_sha256": "3654524a706a93c151e8d1109f5ae91b1c0bb8a9a429c1d6645bca92d1b954b8",
+      "rebuilt_at": "f577518db22a1e5b85c6fa9cbf89b92ef8b27d35"
+    },
+    "film": {
+      "run_id": "8f29db798f5d374dcbe85f52c6ec3f1211e1b3e7bc75764abddd8424233690cd",
+      "source_sha256": "e2f55a9435c89a30818f7e481f3b0114907a9daaab9af6d436acd9035c5473dd",
+      "original_cache_commit": "ae7a9e7172c90703ac443ea116ad1d1ae4c7c64f",
+      "original_manifest_sha256": "64d3b586629742113c5b585a2f9f0030a83d7a9a8223861245b992c4e6420a13",
+      "rebuild_manifest_sha256": "689e9ddcf9ae8b689f6967317b339f045c2deafb6734a3614ae0c46d3a38a2cb",
+      "rebuilt_at": "d6300c6ad5ef5f81d8604d671e41936585f48f84"
+    },
+    "patched": {
+      "run_id": "97df9c747ad5508d11d20c337130ea5b1c8ef4b26698a361b55ab3d111f5c3c4",
+      "source_sha256": "a0b9bceb2fa8a1b7b52a80a306819e7ded75ed30a9c2e594a3641e755709182f",
+      "original_cache_commit": null,
+      "original_manifest_sha256": null,
+      "rebuild_manifest_sha256": "82ad900b55f4dcd91d6fe1196d2e69bfca2f623f85993020e3e79d9e15a597ea",
+      "rebuilt_at": "3b744cb5b25810b039da4fba92a637d4a943a0f7"
+    }
+  },
+  "default_patched_matches_film": [
+    "arrays",
+    "events_sha256",
+    "course_layout",
+    "config"
+  ],
+  "metrics": {
+    "target_area_m2": 4.2264,
+    "cell_size_m": 0.01,
+    "original_report_sha256": "c090ba5808e0d0316d879a13a6e30e62b392e8713cea13c816ac8cfc61c6f5f9",
+    "rerun_matches_original": true,
+    "baseline": {
+      "repeated_area_m2": 1.0855000000000001,
+      "extra_visit_area_m2": 1.7788000000000002,
+      "low_or_no_yield_travel_m": 2.6600000000000006,
+      "distance_m": 17.755489438981176,
+      "actual_m2": 3.2527000000000004,
+      "actual_in_nominal_m2": 3.0555000000000003,
+      "nominal_fraction_cut": 0.7229557069846678
+    },
+    "candidate": {
+      "repeated_area_m2": 0.9021,
+      "extra_visit_area_m2": 1.2388000000000001,
+      "low_or_no_yield_travel_m": 1.3999999999999995,
+      "distance_m": 17.8409314485802,
+      "actual_m2": 3.8184,
+      "actual_in_nominal_m2": 3.6212,
+      "nominal_fraction_cut": 0.8568048457315919
+    }
+  },
+  "reported_tests": {
+    "film": {
+      "commit": "d6300c6ad5ef5f81d8604d671e41936585f48f84",
+      "passed": 130,
+      "duration_s": 172.29,
+      "log": "reported-tests-film.log",
+      "bytes": 192,
+      "sha256": "93a2a335fa215aa613017a41ace095a7e0627b8af59e041dbb3fe51be88ab9cd"
+    },
+    "patched": {
+      "commit": "3b744cb5b25810b039da4fba92a637d4a943a0f7",
+      "passed": 131,
+      "duration_s": 160.31,
+      "log": "reported-tests-patched.log",
+      "bytes": 192,
+      "sha256": "6785c41ef33d10f61f99c3bc6e328981b67d96425be81416ddacefedfb53d555"
+    }
+  },
+  "rerun_tests": {
+    "film": {
+      "commit": "d6300c6ad5ef5f81d8604d671e41936585f48f84",
+      "passed": 130,
+      "duration_s": 178.84,
+      "log": "rerun-tests-film.log",
+      "bytes": 192,
+      "sha256": "df6e1361ab1be94ad56b5db48babe99c77d4c80b145d1917b675ed6e11d9ec2e"
+    },
+    "patched": {
+      "commit": "3b744cb5b25810b039da4fba92a637d4a943a0f7",
+      "passed": 131,
+      "duration_s": 180.24,
+      "log": "rerun-tests-patched.log",
+      "bytes": 192,
+      "sha256": "ad7d3e0c33e35a3428301d58323e50822408283fcc3db3ae4471d51b14ec869c"
+    },
+    "cpu_contracts": {
+      "commit": null,
+      "passed": 21,
+      "duration_s": 4.79,
+      "log": "rerun-tests-cpu-contracts.log",
+      "bytes": 99,
+      "sha256": "bd74b979348e4f38d1fedfd628f68594d80c8a79d815ca02c593f3089c38ed0a",
+      "checkout": "local_closeout_with_golden_fixture"
+    }
+  },
+  "rerun_environment": {
+    "python": "3.11.15",
+    "numpy": "2.2.6",
+    "pytest": "9.0.3",
+    "blender": "5.2.4 LTS cd5dc428cce1",
+    "ffmpeg": "7.1.1",
+    "render_smoke_device": "CPU"
+  },
+  "rerun_media_checks": {
+    "full_av_decode": true,
+    "ffprobe_metadata": true,
+    "sha256_matches_rendition": true,
+    "smoke": {
+      "width": 640,
+      "height": 360,
+      "frames": 3,
+      "sha256": "f37c599e5733a8d36456307c8fed7d3f4885358232045a7aed32a964137a0c3f"
+    }
+  },
+  "subjective_review": {
+    "prior_sample_method": "contact-sheet",
+    "full_continuous_viewing": "pending",
+    "audio_audition": "pending"
+  },
+  "prepared_attachments": {
+    "avoidance.mp4": {
+      "bytes": 12621874,
+      "sha256": "467af34733a54205c4fa10916d631a3d74d01b1645ef5283072d46d5b1854e1f"
+    },
+    "baseline-state.tar": {
+      "bytes": 30883840,
+      "sha256": "7d0bb9f24d2b727a3db90694c86a6348f4cfc6077186b616a84e3bc14f66fa35"
+    },
+    "contact.jpg": {
+      "bytes": 388605,
+      "sha256": "0f3020fbbcc297d21002c48294393614b33f2e80db5e98603efd181e443bbd7b"
+    },
+    "film-state.tar": {
+      "bytes": 30986240,
+      "sha256": "c40698a60ff2e0191359dbb5c40cdb381a8aeb4faf68763ffb4ccf8525154ad5"
+    },
+    "mower-pov-mowing-course.mp4": {
+      "bytes": 557893794,
+      "sha256": "0152c06c0e192dae32e155ef707c0d2f8ae903979948bd6716d659d0957b3b8b"
+    },
+    "turning.mp4": {
+      "bytes": 11209611,
+      "sha256": "edff8bcfa833b57d21dd4bc4a803a95a386c1c594bd27a07630bdc0bdd12c122"
+    },
+    "verification-evidence.tar": {
+      "bytes": 716800,
+      "sha256": "2521ed2a18fd883a595422d5bfec792ed7cda089abc5708e8dbfcb39930e61b4"
+    },
+    "work-area.mp4": {
+      "bytes": 8653442,
+      "sha256": "54231c982a69e2eb9598f9baae75c8c9b9d439f299386db83bcebc0a28f89f76"
+    }
+  },
+  "remote_at_check": {
+    "source": "freemyai/mower-pov",
+    "source_id": 1466523025,
+    "default_branch": "main",
+    "default_commit": "19d3196abf3d79112f401528a53f3346192eb514",
+    "target": "ros-claw/mower-pov",
+    "target_lookup_status": 404,
+    "source_admin": true,
+    "target_org_admin": true,
+    "target_name_matches_in_visible_list": 0,
+    "release_count": 0,
+    "transfer": "pending_separate_action",
+    "public_downloads": []
+  }
+}

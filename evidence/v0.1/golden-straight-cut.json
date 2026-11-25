@@ -1,0 +1,19 @@
+{
+  "id": "v0.1-straight-cut-and-return",
+  "mode": "offline_plan_replay",
+  "config": "configs/backyard.toml",
+  "blade_radius_m": 0.14,
+  "cut_height_m": 0.045,
+  "time_s": [0.0, 1.0, 2.0],
+  "centre_xy_m": [[0.0, 0.0], [1.0, 0.0], [0.0, 0.0]],
+  "yaw_rad": [0.0, 0.0, 0.0],
+  "root_xy_m": [[0.5, 0.0], [0.5, 0.16], [0.6, 0.0]],
+  "initial_height_m": [0.1, 0.1, 0.03],
+  "expected_first_cut_s": [0.36, null, 0.46],
+  "alternate_camera_mount_xyz_m": [0.36, 0.0, 0.22],
+  "height_samples": [
+    {"time_s": 0.35, "height_m": [0.1, 0.1, 0.03]},
+    {"time_s": 1.0, "height_m": [0.045, 0.1, 0.03]},
+    {"time_s": 2.0, "height_m": [0.045, 0.1, 0.03]}
+  ]
+}
